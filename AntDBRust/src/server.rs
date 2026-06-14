@@ -110,6 +110,14 @@ impl ServerAntDb {
                             let response = &self.resp_hget(values);
                             _ = socket.write_all(&response.encode()).await;
                         }
+                        "DEL" => {
+                            let response = &self.resp_del(values);
+                            _ = socket.write_all(&response.encode()).await;
+                        }
+                        "EXISTS" => {
+                            let response = &self.resp_exists(values);
+                            _ = socket.write_all(&response.encode()).await;
+                        }
                         _ => {
                             println!("command unhandled : {}", command_name);
                             let err_msg = format!("ERR unknown command '{}'", command_name);
@@ -245,5 +253,37 @@ impl ServerAntDb {
             Err(_) => Value::Null,
         }
 
+    }
+
+    pub fn resp_exists(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'exists' command".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        match self.app_ctx.ant_db.exist(key) {
+            Ok(result) => Value::Integer(result),
+            Err(_) => Value::Integer(0),
+        }
+    }
+
+    pub fn resp_del(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        match self.app_ctx.ant_db.del(key) {
+            Ok(result) => Value::Integer(result.parse::<i64>().unwrap_or(0)),
+            Err(_) => Value::Integer(0),
+        }
     }
 }

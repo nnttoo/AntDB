@@ -116,6 +116,35 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST HSET PASSED SUCCESSFULLY!");
     }
 
+    async function testDel() {
+        console.log("=== TEST DEL ===");
+        const key = "testhash";
+
+        console.log('Deleting key with DEL...');
+        const deletedCount = await redis.del(key);
+        console.log('DEL result:', deletedCount);
+
+        if (deletedCount !== 1) {
+            throw new Error(`Assertion Failed: DEL should remove 1 key, but returned '${deletedCount}'`);
+        }
+
+        console.log("✅ TEST DEL PASSED SUCCESSFULLY!");
+    }
+
+    async function testExists() {
+        console.log("=== TEST EXISTS ===");
+        const key = "testhash";
+
+        const existsCount = await redis.exists(key);
+        console.log('EXISTS result:', existsCount);
+
+        if (existsCount !== 0) {
+            throw new Error(`Assertion Failed: EXISTS should return 0 after DEL, but got '${existsCount}'`);
+        }
+
+        console.log("✅ TEST EXISTS PASSED SUCCESSFULLY!");
+    }
+
     try {
         console.log('--- Starting AntDb Replica Tests ---\n');
 
@@ -140,6 +169,10 @@ async function testServer(): Promise<void> {
         
         console.log('\n-----------------------------------\n');
         await testHset();
+        console.log('\n-----------------------------------\n');
+        await testDel();
+        console.log('\n-----------------------------------\n');
+        await testExists();
 
 
     } catch (error) {

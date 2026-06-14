@@ -162,4 +162,33 @@ impl AntDB {
 
         Ok(value.clone())
     }
+
+    pub fn exist(&self, key: String) -> Result<i64, BoxError> {
+        let Ok(hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get(&key) else {
+            return Ok(0);
+        };
+
+        if data.is_expired() {
+            return Ok(0);
+        }
+
+        Ok(1)
+    }
+
+    
+    pub fn del(&self, key: String) -> Result<String, BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        if hmap_lock.remove(&key).is_some() {
+            Ok("1".to_string())
+        } else {
+            Ok("0".to_string())
+        }
+    }
 }

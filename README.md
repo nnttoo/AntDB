@@ -48,5 +48,41 @@ antdb-server.exe
 ```
 
 ## RoadMap
- - feat : node js as protocol tester
- - create AntDBserver
+### Implemented Commands
+- String / Key Commands
+  - ✅ SET
+  - ✅ GET
+  - ✅ SETEX
+  - ✅ EXPIRE
+  - ✅ DEL
+  - ✅ EXISTS
+- Hash Commands
+  - ✅ HSET
+  - ✅ HGET
+
+### Next to Implement
+- TTL / Expiry
+  - ⏳ TTL
+  - ⏳ PTTL
+  - ⏳ PERSIST
+- Hash Extensions
+  - ⏳ HDEL
+  - ⏳ HLEN
+  - ⏳ HEXISTS
+  - ⏳ HMGET
+  - ⏳ HKEYS
+  - ⏳ HVALS
+  - ⏳ HGETALL
+- Advanced String Commands
+  - ⏳ MSET
+  - ⏳ MGET
+  - ⏳ INCR
+  - ⏳ DECR
+  - ⏳ APPEND
+  - ⏳ GETSET
+- Key Utilities
+  - ⏳ KEYS
+  - ⏳ SCAN
+- Quality / Compatibility
+  - ⏳ improve Redis command compatibility and tests
+  - ⏳ fix expired-key cleanup on HGET
