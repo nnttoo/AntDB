@@ -6,6 +6,8 @@ use crate::app_ctx::AppCtx;
 mod  app_ctx;
 mod utils_tools;
 mod config;
+mod db;
+mod server;
 
 
 #[tokio::main]

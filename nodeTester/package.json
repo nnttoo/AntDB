@@ -1,0 +1,15 @@
+{
+  "name": "nodetester",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "run": "tsx ./src/index.ts"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "ioredis": "^5.11.1",
+    "tsx": "^4.22.4"
+  }
+}
