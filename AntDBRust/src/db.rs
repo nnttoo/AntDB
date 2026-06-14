@@ -1,18 +1,38 @@
 use std::{
     collections::HashMap,
     sync::{Arc, Mutex},
-    time::Instant,
+    time::{Duration, Instant},
 };
 
+use crate::BoxError;
+#[derive(Clone)]
+pub enum CacheType {
+    String(String),
+    Hash(HashMap<String, String>), 
+}
 #[derive(Clone)]
 struct CacheItem {
-    value: String,
+    value: CacheType,
     expires_at: Option<Instant>, // Jika None, berarti data permanen
 }
 
-pub type HashDB = Arc<Mutex<HashMap<String, CacheItem>>>;
+impl CacheItem {
+    pub fn set_expire(second: u64) -> Instant {
+        Instant::now() + Duration::from_secs(second)
+    }
+
+    pub fn is_expired(&self) -> bool {
+        if let Some(expiry) = self.expires_at {
+            Instant::now() > expiry
+        } else {
+            false
+        }
+    }
+}
+
+type HashDB = Arc<Mutex<HashMap<String, CacheItem>>>;
 pub struct AntDB {
-    pub hash_map: HashDB,
+    hash_map: HashDB,
 }
 
 pub type AntDbArc = Arc<AntDB>;
@@ -22,5 +42,124 @@ impl AntDB {
         Arc::new(AntDB {
             hash_map: Arc::new(Mutex::new(HashMap::new())),
         })
+    }
+
+    pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error locck"));
+        };
+
+        hmap_lock.insert(
+            key,
+            CacheItem {
+                value: CacheType::String(val),
+                expires_at: None,
+            },
+        );
+
+        Ok(())
+    }
+
+    pub fn get(&self, key: String) -> Result<String, BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get(&key) else {
+            return Err(Box::from("no key font"));
+        };
+
+        let value = data.value.clone();
+        let is_expire = data.is_expired();
+
+        if is_expire {
+            hmap_lock.remove(&key);
+            return Err(Box::from("key is expire"));
+        }
+
+        let CacheType::String(value_str) = value else {
+            return Err(Box::from("data is not string"));
+        };
+
+        Ok(value_str)
+    }
+
+    pub fn setex(&self, key: String, ttl: u64, val: String) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        hmap_lock.insert(
+            key,
+            CacheItem {
+                value: CacheType::String(val),
+                expires_at: Some(CacheItem::set_expire(ttl)),
+            },
+        );
+
+        Ok(())
+    }
+
+    pub fn expire(&self, key : String, ttl : u64) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get_mut(&key) else {
+            return Err(Box::from("no key found"));
+        };
+
+        data.expires_at = Some(CacheItem::set_expire(ttl));
+
+
+        Ok(())
+    }
+
+    pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let entry = hmap_lock.entry(key).or_insert(CacheItem {
+            value: CacheType::Hash(HashMap::new()),
+            expires_at: None,
+        });
+
+        match &mut entry.value {
+            CacheType::Hash(hash_map) => {
+                hash_map.insert(field, value);
+            }
+            CacheType::String(_) => {
+                let mut hash_map = HashMap::new();
+                hash_map.insert(field, value);
+                entry.value = CacheType::Hash(hash_map);
+            }
+        }
+
+        Ok(())
+    }
+
+    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
+        let Ok(hmap_lock) = self.hash_map.try_lock() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get(&key) else {
+            return Err(Box::from("no key found"));
+        };
+
+        if data.is_expired() {
+            return Err(Box::from("key is expire"));
+        }
+
+        let CacheType::Hash(hash_map) = &data.value else {
+            return Err(Box::from("data is not hash"));
+        };
+
+        let Some(value) = hash_map.get(&field) else {
+            return Err(Box::from("field not found"));
+        };
+
+        Ok(value.clone())
     }
 }

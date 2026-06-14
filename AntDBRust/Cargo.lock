@@ -6,6 +6,7 @@ version = 4
 name = "AntDBRust"
 version = "0.1.0"
 dependencies = [
+ "resp",
  "serde",
  "serde_json",
  "tokio",
@@ -132,6 +133,12 @@ checksum = "ed2bf2547551a7053d6fdfafda3f938979645c44812fbfcda098faae3f1a362d"
 dependencies = [
  "bitflags",
 ]
+
+[[package]]
+name = "resp"
+version = "1.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3d276d153c2c18b622527a9118d8055e4e26530f15d616d6290b00acc7e2f6aa"
 
 [[package]]
 name = "scopeguard"
