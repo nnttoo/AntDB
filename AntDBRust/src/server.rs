@@ -75,10 +75,8 @@ impl ServerAntDb {
                             let _ = socket.write_all(&response.encode()).await;
                         } 
                         "PING" => {
-                            println!("ping detected");
-                            let response = Value::String("PONG".to_string());
-                            let encoded_response = response.encode();
-                            _ = socket.write_all(&encoded_response).await;
+                            let response = self.resp_ping(values);
+                            _ = socket.write_all(&response.encode()).await;
                         }
                         "COMMAND" => {
                             // Balas dengan array kosong agar client tidak error membaca daftar command
@@ -128,6 +126,18 @@ impl ServerAntDb {
                 _ => {}
             }
         }
+    }
+
+    fn resp_ping(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Bulk("PONG".to_string());
+        }
+
+        let Value::Bulk(message) = values.remove(0) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        Value::Bulk(message)
     }
 
     fn resp_set(&self, mut values: Vec<Value>) -> Value {
