@@ -1,10 +1,16 @@
 // Haryanto 14 Juni 2026
 import Redis from 'ioredis';
 
+//@ts-ignore
+const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
+
+//@ts-ignore
+const redisPort = Number(process.env.REDIS_PORT ?? '6379');
+
 // Connect to the Redis server
 const redis: Redis = new Redis({
-    port: 6379,
-    host: '127.0.0.1'
+    host: redisHost,
+    port: redisPort,
 });
 
 function sleep(n: number) {

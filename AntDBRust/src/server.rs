@@ -1,10 +1,14 @@
-use std::{io::BufReader, sync::Arc};
+use std::{
+    io::{BufReader, Cursor},
+    sync::Arc,
+};
 
 use resp::{Decoder, Value};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
     net::{TcpListener, TcpStream},
 };
+use tokio_util::bytes::BytesMut;
 
 use crate::{app_ctx::AppCtxArc, utils_tools::BoxError};
 
@@ -36,108 +40,130 @@ impl ServerAntDb {
         Ok(())
     }
 
-    async fn child_open(self: ServerAntDbArc, mut socket: TcpStream) {
-        let mut buffer = [0; 1024];
-        loop {
-            let Ok(n) = socket.read(&mut buffer).await else {
-                return;
-            };
+    async fn child_open(self: ServerAntDbArc, mut socket: tokio::net::TcpStream) {
+        let mut buf = BytesMut::with_capacity(65536);
 
-            if n == 0 {
-                return;
+        loop {
+            match socket.read_buf(&mut buf).await {
+                Ok(0) => return,
+                Ok(_) => {}
+                Err(_) => return,
             }
 
-            let mut decoder = Decoder::new(BufReader::new(&buffer[..n]));
-            let Ok(decoded) = decoder.decode() else {
-                continue;
-            };
+            let mut consumed = 0;
 
-            match decoded {
-                Value::Array(mut values) => {
-                    if values.is_empty() {
-                        continue;
+            loop {
+                let remaining = &buf[consumed..];
+                if remaining.is_empty() {
+                    break;
+                }
+
+                let mut cursor = Cursor::new(remaining);
+                let buf_reader = BufReader::new(&mut cursor);
+                let mut decoder = Decoder::new(buf_reader);
+
+                match decoder.decode() {
+                    Ok(decoded) => {
+                        // KUNCI OPTIMASI: cursor.position() akan melompat maju karena di-prefetch BufReader.
+                        // Jika Decoder kamu mengekspos akses ke interior BufReader, kamu bisa kurangi dengan sisa buffer.
+                        // Namun jika tidak, cara paling aman tanpa merusak posisi TCP stream adalah Solusi 1.
+                        consumed += cursor.position() as usize;
+
+                        match decoded {
+                            Value::Array(mut values) => {
+                                if values.is_empty() {
+                                    continue;
+                                }
+                                let Value::Bulk(cmd_bytes) = values.remove(0) else {
+                                    continue;
+                                };
+                                let command_name = cmd_bytes.to_uppercase();
+
+                                match command_name.as_str() {
+                                    "CLIENT" => {
+                                        let _ = socket
+                                            .write_all(&Value::String("OK".to_string()).encode())
+                                            .await;
+                                    }
+                                    "INFO" => {
+                                        let info_data = "# Server\r\nAntDB_version:7.0.0\r\n";
+                                        let response = Value::Bulk(info_data.to_string());
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "PING" => {
+                                        let response = self.resp_ping(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "COMMAND" => {
+                                        let response = Value::Array(vec![]);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "SET" => {
+                                        let response = &self.resp_set(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "SETEX" => {
+                                        let response = &self.resp_setex(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "EXPIRE" => {
+                                        let response = &self.resp_expire(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "GET" => {
+                                        let response = &self.resp_get(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "HSET" => {
+                                        let response = &self.resp_hset(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "HGET" => {
+                                        let response = &self.resp_hget(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "DEL" => {
+                                        let response = &self.resp_del(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    "EXISTS" => {
+                                        let response = &self.resp_exists(values);
+                                        let _ = socket.write_all(&response.encode()).await;
+                                    }
+                                    _ => {
+                                        println!("command unhandled : {}", command_name);
+                                        let err_msg =
+                                            format!("ERR unknown command '{}'", command_name);
+                                        let _ =
+                                            socket.write_all(&Value::Error(err_msg).encode()).await;
+                                    }
+                                }
+                            }
+                            _ => {}
+                        }
                     }
-
-                    let Value::Bulk(cmd_bytes) = values.remove(0) else {
-                        continue;
-                    };
-
-                    let command_name = cmd_bytes.to_uppercase();
-                    match command_name.as_str() {
-                        "CLIENT" => {
-                            let _ = socket
-                                .write_all(&Value::String("OK".to_string()).encode())
-                                .await;
-                        }
-                        "INFO" => {
-                            let info_data = "# Server\r\nAntDB_version:7.0.0\r\n";
-                            let response = Value::Bulk(info_data.to_string());
-                            let _ = socket.write_all(&response.encode()).await;
-                        } 
-                        "PING" => {
-                            let response = self.resp_ping(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "COMMAND" => {
-                            // Balas dengan array kosong agar client tidak error membaca daftar command
-                            let response = Value::Array(vec![]);
-                            let _ = socket.write_all(&response.encode()).await;
-                        }
-                        "SET" => {
-                            let response = &self.resp_set(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        
-                        "SETEX" => {
-                            let response = &self.resp_setex(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        } 
-                        "EXPIRE" => {
-                            let response = &self.resp_expire(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "GET" => {
-                            let response = &self.resp_get(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "HSET" => {
-                            let response = &self.resp_hset(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "HGET" => {
-                            let response = &self.resp_hget(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "DEL" => {
-                            let response = &self.resp_del(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        "EXISTS" => {
-                            let response = &self.resp_exists(values);
-                            _ = socket.write_all(&response.encode()).await;
-                        }
-                        _ => {
-                            println!("command unhandled : {}", command_name);
-                            let err_msg = format!("ERR unknown command '{}'", command_name);
-                            let _ = socket.write_all(&Value::Error(err_msg).encode()).await;
-                        }
+                    Err(_) => {
+                        break;
                     }
                 }
-                _ => {}
+            }
+
+            if consumed > 0 {
+                let _ = buf.split_to(consumed);
             }
         }
     }
 
     fn resp_ping(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
-            return Value::Bulk("PONG".to_string());
+            return Value::String("PONG".to_string());
         }
 
-        let Value::Bulk(message) = values.remove(0) else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
+        println!("DEBUG: PING detected with {} arguments", values.len());
 
-        Value::Bulk(message)
+        // Ambil argumen pertama (apapun isinya, entah Bulk atau String)
+        // lalu echo balikkan langsung ke klien tanpa mengubah tipenya.
+        values.remove(0)
     }
 
     fn resp_set(&self, mut values: Vec<Value>) -> Value {
@@ -221,9 +247,7 @@ impl ServerAntDb {
         let ttl_variant = values.remove(0);
         let val_variant = values.remove(0);
 
-        let (Value::Bulk(key), 
-            Value::Bulk(ttl_bytes), 
-            Value::Bulk(value)) =
+        let (Value::Bulk(key), Value::Bulk(ttl_bytes), Value::Bulk(value)) =
             (key_variant, ttl_variant, val_variant)
         else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
@@ -233,11 +257,10 @@ impl ServerAntDb {
             return Value::Error("error parse ttl".to_string());
         };
 
-        match self.app_ctx.ant_db.setex(key,ttl, value) {
+        match self.app_ctx.ant_db.setex(key, ttl, value) {
             Ok(_) => Value::String("OK".to_string()),
             Err(e) => Value::Error(e.to_string()),
         }
-
     }
 
     pub fn resp_expire(&self, mut values: Vec<Value>) -> Value {
@@ -254,15 +277,14 @@ impl ServerAntDb {
             return Value::Error("parse error".to_string());
         };
 
-         let Ok(ttl) = ttl_str.parse::<u64>() else {
+        let Ok(ttl) = ttl_str.parse::<u64>() else {
             return Value::Error("error parse ttl".to_string());
         };
 
-        match self.app_ctx.ant_db.expire(key,ttl) {
+        match self.app_ctx.ant_db.expire(key, ttl) {
             Ok(_) => Value::String("OK".to_string()),
             Err(_) => Value::Null,
         }
-
     }
 
     pub fn resp_exists(&self, mut values: Vec<Value>) -> Value {

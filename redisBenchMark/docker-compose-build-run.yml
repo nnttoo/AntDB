@@ -1,0 +1,32 @@
+# // Haryanto 15 06 2026
+# English: Comments and logs are strictly in English as per rules.
+
+version: '3.8'
+
+services:
+  antdb-all-in-one:
+    container_name: antdb-combined-container
+    ports:
+      - "6379:6379"
+    build:
+      context: ..
+      dockerfile_inline: |
+        # --- Single Stage Runtime Image ---
+        FROM alpine:latest
+        RUN apk update && apk add --no-cache musl-dev nodejs npm redis
+        
+        # 1. Salin biner Linux yang sudah ada dari lokal ke dalam container
+        WORKDIR /working_dir  
+
+        # 2. Siapkan Node.js Tester langsung saat BUILD
+        WORKDIR /usr/src/tester
+        COPY ./nodeTester/package*.json ./
+        RUN npm install
+        COPY ./nodeTester .
+        WORKDIR /working_dir
+        ENTRYPOINT ["/docker_entry/entrypoint_run.sh"] 
+  
+    volumes:
+      # Map host folder to container path
+      - ./docker_working_dir:/working_dir
+      - ./docker_entry:/docker_entry

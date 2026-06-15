@@ -1,0 +1,19 @@
+{
+  "name": "redisbenchmark",
+  "version": "1.0.0",
+  "description": "## Step-by-step",
+  "main": "index.js",
+  "scripts": { 
+    "compile_compose": "docker compose -f docker-compose-build.yml",
+    "compile_build": "npm run compile_compose -- build",
+    "compile_up": "npm run compile_compose -- up --remove-orphans --force-recreate",
+   
+    "bmark_compose": "docker compose -f docker-compose-build-run.yml",
+    "bmark_build": "npm run bmark_compose -- build",
+    "bmark_up": "npm run bmark_compose -- up --remove-orphans --force-recreate",
+
+    "run_all" : "npm run compile_up && npm run bmark_up"
+  },
+  "author": "",
+  "license": "ISC"
+}

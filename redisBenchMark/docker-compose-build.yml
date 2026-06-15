@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  builder:
+    image: antdb-builder:latest
+    build:
+      context: ..
+      dockerfile_inline: |
+        # Haryanto 15 06 2026
+        FROM rust:alpine
+        RUN apk add --no-cache build-base zig
+        RUN cargo install cargo-zigbuild
+        WORKDIR /build
+        ENTRYPOINT ["/docker_entry/entrypoint_build.sh"] 
+    volumes:
+      # Mount source code untuk dibaca oleh command
+      - ../AntDBRust:/app_source
+      # Mount folder output
+      - ./docker_working_dir:/working_dir 
+      - ./docker_entry:/docker_entry 

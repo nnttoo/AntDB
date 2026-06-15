@@ -140,7 +140,7 @@ impl AntDB {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let Ok(hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
             return Err(Box::from("error lock"));
         };
 
@@ -148,11 +148,15 @@ impl AntDB {
             return Err(Box::from("no key found"));
         };
 
-        if data.is_expired() {
-            return Err(Box::from("key is expire"));
+        let is_expire = data.is_expired();
+        let value = data.value.clone();
+
+        if is_expire {
+            hmap_lock.remove(&key);
+            return Err(Box::from("key is expire")); 
         }
 
-        let CacheType::Hash(hash_map) = &data.value else {
+        let CacheType::Hash(hash_map) = value else {
             return Err(Box::from("data is not hash"));
         };
 

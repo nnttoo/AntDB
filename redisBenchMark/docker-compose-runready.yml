@@ -1,0 +1,49 @@
+# // Haryanto 15 06 2026
+# English: Comments and logs are strictly in English as per rules.
+
+version: '3.8'
+
+services:
+  antdb-all-in-one:
+    container_name: antdb-combined-container
+    ports:
+      - "6379:6379"
+    build:
+      context: ..
+      dockerfile_inline: |
+        # --- Single Stage Runtime Image ---
+        FROM alpine:latest
+        RUN apk update && apk add --no-cache musl-dev nodejs npm redis
+        
+        # 1. Salin biner Linux yang sudah ada dari lokal ke dalam container
+        WORKDIR /app
+        COPY ./redisBenchMark/zigbuild/x86_64-unknown-linux-musl/release/AntDBRust ./AntDBRust
+        RUN chmod +x ./AntDBRust
+
+        # 2. Siapkan Node.js Tester langsung saat BUILD
+        WORKDIR /usr/src/tester
+        COPY ./nodeTester/package*.json ./
+        RUN npm install
+        COPY ./nodeTester .
+        
+    command: >
+      sh -c "
+      echo '=== 1. Starting AntDB Server in Background ===' &&
+      cd /app &&
+      ./AntDBRust &
+      
+      echo '=== 2. Waiting 5 Seconds for CPU System to Settle ===' &&
+      sleep 5 &&
+      
+      echo '=== 3. Running Node.js Functional Tests ===' &&
+      cd /usr/src/tester &&
+      npx tsx ./src/index.ts &&
+      
+      echo '=== 4. Running Raw Redis Benchmark (Zero-Overhead Loopback) ===' &&
+      echo 'Testing PING performance...' &&
+      redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -q PING &&
+      echo 'Testing SET performance...' &&
+      redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -q SET __rand_int__ v &&
+      echo 'Testing GET performance...' &&
+      redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -q GET __rand_int__
+      "
