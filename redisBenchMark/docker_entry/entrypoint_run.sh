@@ -24,3 +24,5 @@ echo "Running all benchmarks (PING, SET, GET, HSET) to CSV..."
 redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -t  ping,set,get --csv > /working_dir/benchmark_results.csv
 
 echo "\n=== Tests Completed. All benchmark results saved to /working_dir/benchmark_results.csv ==="
+
+cat /working_dir/benchmark_results.csv

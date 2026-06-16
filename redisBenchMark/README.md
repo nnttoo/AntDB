@@ -1,27 +1,38 @@
 # Redis Benchmark Guide for AntDB
 
-## Step-by-step
+This directory provides automated scripts to compile and benchmark AntDB using Docker containers. All commands are managed via `package.json` as shortcuts for easier execution.
 
-1. Start AntDB locally:
-   ```bash
-   cd AntDBRust
-   cargo run
-   ```
+---
 
-2. Run the benchmark container:
-   ```bash
-   cd redisBenchMark
-   docker compose up
-   ```
+## Prerequisites
 
-3. If you want to use only specific commands, run this instead:
-   ```bash
-   docker run --rm --add-host=host.docker.internal:host-gateway redis:7-alpine \
-     redis-benchmark -h host.docker.internal -p 6379 -t set,get,ping -c 10 -n 1000 --threads 1
-   ```
+Ensure you have the following installed and running on your machine:
+* **Node.js** (required only to execute the `npm run` shortcuts)
+* **Docker** and **Docker Compose**
 
-4. Example for hash commands (if supported by your current AntDB build):
-   ```bash
-   docker run --rm --add-host=host.docker.internal:host-gateway redis:7-alpine \
-     redis-benchmark -h host.docker.internal -p 6379 -t hset,hget -c 10 -n 1000 --threads 1
-   ```
+---
+
+## Script Explanations
+
+The `package.json` file contains two main pipelines (Compilation and Benchmarking), each split into configuration, building, and running phases:
+
+### 1. Compilation Pipeline (Rust Environment)
+Used to set up and compile the AntDB Rust implementation inside a container.
+* `npm run compile_compose`: Specifies the Docker Compose configuration file (`docker-compose-build.yml`).
+* `npm run compile_build`: Builds the Docker image for the compilation environment.
+* `npm run compile_up`: Compiles the Rust project and runs the container, forcing a recreate to ensure a clean build.
+
+### 2. Benchmark Pipeline (Redis Benchmark Environment)
+Used to build and execute the benchmarking suite against the compiled AntDB.
+* `npm run bmark_compose`: Specifies the Docker Compose configuration file for testing (`docker-compose-build-run.yml`).
+* `npm run bmark_build`: Builds the Docker image for the benchmark runner.
+* `npm run bmark_up`: Launches the benchmark suite, cleaning up any orphaned containers.
+
+---
+
+## Quick Start Guide
+
+To compile the project and run the complete benchmark suite sequentially in one go, execute:
+
+```bash
+npm run run_all
