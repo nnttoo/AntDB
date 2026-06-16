@@ -58,24 +58,15 @@ impl ServerAntDb {
                     break;
                 }
 
-                if remaining.starts_with(b"PING\r\n") || remaining.starts_with(b"ping\r\n") {
-                    let _ = socket
-                        .write_all(&Value::String("PONG".to_string()).encode())
-                        .await;
-                    consumed += 6; // Majukan pointer melewati "PING\r\n" (6 bytes)
-                    continue; // Lanjut ke perintah berikutnya di dalam buffer
-                }
-
                 let mut cursor = Cursor::new(remaining);
                 let buf_reader = BufReader::with_capacity(1, &mut cursor);
                 let mut decoder = Decoder::new(buf_reader);
 
                 match decoder.decode() {
                     Ok(decoded) => {
-                        // KUNCI OPTIMASI: cursor.position() akan melompat maju karena di-prefetch BufReader.
-                        // Jika Decoder kamu mengekspos akses ke interior BufReader, kamu bisa kurangi dengan sisa buffer.
-                        // Namun jika tidak, cara paling aman tanpa merusak posisi TCP stream adalah Solusi 1.
                         consumed += cursor.position() as usize;
+
+                        //println!("Decoded type: {:?}", &decoded);
 
                         match decoded {
                             Value::Array(mut values) => {
@@ -87,70 +78,46 @@ impl ServerAntDb {
                                 };
                                 let command_name = cmd_bytes.to_uppercase();
 
-                                match command_name.as_str() {
-                                    "CLIENT" => {
-                                        let _ = socket
-                                            .write_all(&Value::String("OK".to_string()).encode())
-                                            .await;
-                                    }
-                                    "INFO" => {
-                                        let info_data = "# Server\r\nAntDB_version:7.0.0\r\n";
-                                        let response = Value::Bulk(info_data.to_string());
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "PING" => {
-                                        let response = self.resp_ping(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "COMMAND" => {
-                                        let response = Value::Array(vec![]);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "SET" => {
-                                        let response = &self.resp_set(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "SETEX" => {
-                                        let response = &self.resp_setex(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "EXPIRE" => {
-                                        let response = &self.resp_expire(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "GET" => {
-                                        let response = &self.resp_get(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "HSET" => {
-                                        let response = &self.resp_hset(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "HGET" => {
-                                        let response = &self.resp_hget(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "DEL" => {
-                                        let response = &self.resp_del(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
-                                    "EXISTS" => {
-                                        let response = &self.resp_exists(values);
-                                        let _ = socket.write_all(&response.encode()).await;
-                                    }
+                                let val_response = match command_name.as_str() {
+                                    "CLIENT" => Value::String("OK".to_string()),
+                                    "INFO" => Value::Bulk(
+                                        "# Server\r\nAntDB_version:7.0.0\r\n".to_string(),
+                                    ),
+                                    "PING" => self.resp_ping(values),
+                                    "COMMAND" => Value::Array(vec![]),
+                                    "SET" => self.resp_set(values),
+                                    "SETEX" => self.resp_setex(values),
+                                    "EXPIRE" => self.resp_expire(values),
+                                    "GET" => self.resp_get(values),
+                                    "HSET" => self.resp_hset(values),
+                                    "HGET" => self.resp_hget(values),
+                                    "DEL" => self.resp_del(values),
+                                    "EXISTS" => self.resp_exists(values),
                                     _ => {
                                         println!("command unhandled : {}", command_name);
                                         let err_msg =
                                             format!("ERR unknown command '{}'", command_name);
-                                        let _ =
-                                            socket.write_all(&Value::Error(err_msg).encode()).await;
+                                        Value::Error(err_msg)
                                     }
-                                }
+                                };
+
+                                _ = socket.write_all(&val_response.encode()).await;
                             }
-                            _ => {}
+                            _ => {
+                                println!("mismatch ");
+                                println!("Decoded type: {:?}", &decoded);
+                            }
                         }
                     }
-                    Err(_) => {
+                    Err(e) => {
+                        println!("ERROR DECODE {}", e); 
+                        let mut val = Value::Array(vec![]);  
+                        if remaining.starts_with(b"PING\r\n") || remaining.starts_with(b"ping\r\n") {
+                            println!("PING DETECTED");
+                            val = Value::String("PONG".to_string());
+                        }
+
+                        _ = socket.write_all(&val.encode()).await;
                         break;
                     }
                 }

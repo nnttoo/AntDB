@@ -1,5 +1,6 @@
 // Haryanto 14 Juni 2026
 import Redis from 'ioredis';
+import * as net from 'net';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -17,6 +18,34 @@ function sleep(n: number) {
     return new Promise((r, x) => {
         setTimeout(r, n);
     })
+}
+
+async function sendRawPing() {
+    let port = redisPort;
+    let host = redisHost;
+    let response = await new Promise((resolve, reject) => {
+        const client: net.Socket = net.createConnection({ port, host }, () => {
+            // Send exactly "PING\r\n" as raw text bytes
+            client.write("PING\r\n");
+        });
+
+        client.on('data', (data: Buffer) => {
+            resolve(data.toString());
+            client.end(); // Clean up connection
+        });
+
+        client.on('error', (err: Error) => {
+            reject(err);
+        });
+    });
+
+    console.log(response+ ":---");
+
+    if (response == "+PONG\r\n"){
+        console.log("✅ TEST sendRawPing PASSED SUCCESSFULLY!");
+    } else {
+        console.log(`Assertion Failed: sendRawPing`);
+    }
 }
 
 async function testServer(): Promise<void> {
@@ -164,6 +193,11 @@ async function testServer(): Promise<void> {
         const pingWithArg = await redis.call('PING', 'Hello AntDb');
         console.log('PING with argument result:', pingWithArg); // Output yang diharapkan: Hello AntDb
 
+        console.log('\n-----------------------------------\n'); 
+
+
+        console.log("Testing raw ping--------------------------")
+        await sendRawPing();
         console.log('\n-----------------------------------\n'); 
 
 

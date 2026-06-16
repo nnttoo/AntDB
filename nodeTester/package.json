@@ -11,5 +11,8 @@
   "dependencies": {
     "ioredis": "^5.11.1",
     "tsx": "^4.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3"
   }
 }
