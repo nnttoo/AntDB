@@ -58,8 +58,16 @@ impl ServerAntDb {
                     break;
                 }
 
+                if remaining.starts_with(b"PING\r\n") || remaining.starts_with(b"ping\r\n") {
+                    let _ = socket
+                        .write_all(&Value::String("PONG".to_string()).encode())
+                        .await;
+                    consumed += 6; // Majukan pointer melewati "PING\r\n" (6 bytes)
+                    continue; // Lanjut ke perintah berikutnya di dalam buffer
+                }
+
                 let mut cursor = Cursor::new(remaining);
-                let buf_reader = BufReader::new(&mut cursor);
+                let buf_reader = BufReader::with_capacity(1, &mut cursor);
                 let mut decoder = Decoder::new(buf_reader);
 
                 match decoder.decode() {
@@ -159,11 +167,16 @@ impl ServerAntDb {
             return Value::String("PONG".to_string());
         }
 
-        println!("DEBUG: PING detected with {} arguments", values.len());
+        // Ambil argumen pertama
+        let arg = values.remove(0);
 
-        // Ambil argumen pertama (apapun isinya, entah Bulk atau String)
-        // lalu echo balikkan langsung ke klien tanpa mengubah tipenya.
-        values.remove(0)
+        // Pastikan jika tipenya Bulk (dari redis-benchmark), kita kembalikan
+        // sebagai String atau Bulk yang bersih agar dibaca sebagai valid reply oleh benchmark.
+        match arg {
+            Value::Bulk(text) => Value::String(text), // Mengubah Bulk menjadi Simple String seringkali lebih aman untuk benchmark
+            Value::String(text) => Value::String(text),
+            _ => Value::String("PONG".to_string()),
+        }
     }
 
     fn resp_set(&self, mut values: Vec<Value>) -> Value {

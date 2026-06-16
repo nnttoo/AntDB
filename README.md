@@ -85,4 +85,15 @@ antdb-server.exe
   - ⏳ SCAN
 - Quality / Compatibility
   - ⏳ improve Redis command compatibility and tests
-  - ⏳ fix expired-key cleanup on HGET
+  - ⏳ fix expired-key cleanup on 
+  
+
+## Benchmark Result
+
+
+| Test | RPS | Avg Latency (ms) | Min Latency (ms) | P50 Latency (ms) | P95 Latency (ms) | P99 Latency (ms) | Max Latency (ms) |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **PING_INLINE** | 79.744,82 | 0,088 | 0,008 | 0,055 | 0,215 | 0,375 | 4,199 |
+| **PING_MBULK** | 80.906,16 | 0,089 | 0,008 | 0,063 | 0,223 | 0,359 | 1,383 |
+| **SET** | **89.285,71** | **0,082** | 0,008 | 0,055 | 0,199 | 0,335 | 1,327 |
+| **GET** | 82.781,46 | 0,086 | 0,008 | 0,063 | 0,207 | 0,375 | 6,503 |

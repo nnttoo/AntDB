@@ -21,6 +21,6 @@ echo "=========================================="
 echo "Running all benchmarks (PING, SET, GET, HSET) to CSV..."
 
 # Menjalankan semua pengujian sekaligus dan menyimpannya ke satu file CSV
-redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -t  set,get --csv > /working_dir/benchmark_results.csv
+redis-benchmark -h 127.0.0.1 -p 6379 -c 10 -n 50000 -t  ping,set,get --csv > /working_dir/benchmark_results.csv
 
 echo "\n=== Tests Completed. All benchmark results saved to /working_dir/benchmark_results.csv ==="
