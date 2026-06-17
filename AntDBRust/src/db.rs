@@ -1,6 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
 
@@ -8,7 +8,7 @@ use crate::BoxError;
 #[derive(Clone)]
 pub enum CacheType {
     String(String),
-    Hash(HashMap<String, String>), 
+    Hash(HashMap<String, String>),
 }
 #[derive(Clone)]
 struct CacheItem {
@@ -30,7 +30,7 @@ impl CacheItem {
     }
 }
 
-type HashDB = Arc<Mutex<HashMap<String, CacheItem>>>;
+type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
 pub struct AntDB {
     hash_map: HashDB,
 }
@@ -40,12 +40,12 @@ pub type AntDbArc = Arc<AntDB>;
 impl AntDB {
     pub fn create_arc() -> AntDbArc {
         Arc::new(AntDB {
-            hash_map: Arc::new(Mutex::new(HashMap::new())),
+            hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
     }
 
     pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
             return Err(Box::from("error locck"));
         };
 
@@ -61,19 +61,25 @@ impl AntDB {
     }
 
     pub fn get(&self, key: String) -> Result<String, BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
-            return Err(Box::from("error lock"));
-        };
+        let (is_expire, value) = {
+            let Ok(hmap_lock) = self.hash_map.try_read() else {
+                return Err(Box::from("error lock"));
+            };
 
-        let Some(data) = hmap_lock.get(&key) else {
-            return Err(Box::from("no key font"));
-        };
+            let Some(data) = hmap_lock.get(&key) else {
+                return Err(Box::from("no key font"));
+            };
 
-        let value = data.value.clone();
-        let is_expire = data.is_expired();
+            let value = data.value.clone();
+            let is_expire = data.is_expired();
+            (is_expire, value)
+        };
 
         if is_expire {
-            hmap_lock.remove(&key);
+            if let Ok(mut hmap_lock) = self.hash_map.try_write() {
+                hmap_lock.remove(&key);
+            }
+
             return Err(Box::from("key is expire"));
         }
 
@@ -85,7 +91,7 @@ impl AntDB {
     }
 
     pub fn setex(&self, key: String, ttl: u64, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -100,8 +106,8 @@ impl AntDB {
         Ok(())
     }
 
-    pub fn expire(&self, key : String, ttl : u64) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+    pub fn expire(&self, key: String, ttl: u64) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -111,12 +117,11 @@ impl AntDB {
 
         data.expires_at = Some(CacheItem::set_expire(ttl));
 
-
         Ok(())
     }
 
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -140,20 +145,27 @@ impl AntDB {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
-            return Err(Box::from("error lock"));
-        };
+        let (is_expire, value) = {
+            let Ok(hmap_lock) = self.hash_map.try_read() else {
+                return Err(Box::from("error lock"));
+            };
 
-        let Some(data) = hmap_lock.get(&key) else {
-            return Err(Box::from("no key found"));
-        };
+            let Some(data) = hmap_lock.get(&key) else {
+                return Err(Box::from("no key found"));
+            };
 
-        let is_expire = data.is_expired();
-        let value = data.value.clone();
+            let is_expire = data.is_expired();
+            let value = data.value.clone();
+
+            (is_expire, value)
+        };
 
         if is_expire {
-            hmap_lock.remove(&key);
-            return Err(Box::from("key is expire")); 
+            if let Ok(mut hmap_lock) = self.hash_map.try_write() {
+                hmap_lock.remove(&key);
+            }
+
+            return Err(Box::from("key is expire"));
         }
 
         let CacheType::Hash(hash_map) = value else {
@@ -168,7 +180,7 @@ impl AntDB {
     }
 
     pub fn exist(&self, key: String) -> Result<i64, BoxError> {
-        let Ok(hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(hmap_lock) = self.hash_map.try_read() else {
             return Err(Box::from("error lock"));
         };
 
@@ -183,9 +195,8 @@ impl AntDB {
         Ok(1)
     }
 
-    
     pub fn del(&self, key: String) -> Result<String, BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_lock() else {
+        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
             return Err(Box::from("error lock"));
         };
 

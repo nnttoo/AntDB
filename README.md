@@ -1,6 +1,5 @@
 # AntDB
-
-// Haryanto 14 June 2026
+ 
 
 > [!WARNING]
 > **Status: Under Active Development** > AntDB is currently in its early development phase and is not yet ready for production use. Features, API compliance, and binaries are being actively worked on.
