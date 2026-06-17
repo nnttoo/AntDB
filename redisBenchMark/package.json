@@ -8,7 +8,7 @@
     "compile_build": "npm run compile_compose -- build",
     "compile_up": "npm run compile_compose -- up --remove-orphans --force-recreate",
    
-    "bmark_compose": "docker compose -f docker-compose-build-run.yml",
+    "bmark_compose": "docker compose -f docker-compose-run.yml",
     "bmark_build": "npm run bmark_compose -- build",
     "bmark_up": "npm run bmark_compose -- up --remove-orphans --force-recreate",
 

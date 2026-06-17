@@ -30,3 +30,4 @@ services:
       # Map host folder to container path
       - ./docker_working_dir:/working_dir
       - ./docker_entry:/docker_entry
+      - ../nodeTester:/nodeTester

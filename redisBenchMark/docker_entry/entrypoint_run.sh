@@ -4,13 +4,14 @@
 echo "=== Starting Performance Test at $(date) ==="  
 
 echo "=== 1. Starting AntDB Server in Background ===" 
-./AntDBRust > /dev/null 2>&1 &
+./AntDB > /dev/null 2>&1 &
 
 echo "=== 2. Waiting 5 Seconds for CPU System to Settle ===" 
 sleep 5
 
 echo "=== 3. Running Node.js Functional Tests ===" 
 # Output test Node.js langsung dialihkan ke terminal (tidak ke log file)
+cp /nodeTester/src/index.ts  /usr/src/tester/src/index.ts
 cd /usr/src/tester && npx tsx ./src/index.ts  
 
 echo "=========================================="

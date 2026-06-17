@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "AntDBRust"
+name = "AntDB"
 version = "0.1.0"
 dependencies = [
  "resp",
