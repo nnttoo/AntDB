@@ -45,7 +45,7 @@ impl AntDB {
     }
 
     pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error locck"));
         };
 
@@ -62,7 +62,7 @@ impl AntDB {
 
     pub fn get(&self, key: String) -> Result<String, BoxError> {
         let (is_expire, value) = {
-            let Ok(hmap_lock) = self.hash_map.try_read() else {
+            let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
@@ -76,7 +76,7 @@ impl AntDB {
         };
 
         if is_expire {
-            if let Ok(mut hmap_lock) = self.hash_map.try_write() {
+            if let Ok(mut hmap_lock) = self.hash_map.write() {
                 hmap_lock.remove(&key);
             }
 
@@ -91,7 +91,7 @@ impl AntDB {
     }
 
     pub fn setex(&self, key: String, ttl: u64, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -107,7 +107,7 @@ impl AntDB {
     }
 
     pub fn expire(&self, key: String, ttl: u64) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -121,7 +121,7 @@ impl AntDB {
     }
 
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
@@ -146,7 +146,7 @@ impl AntDB {
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
         let (is_expire, value) = {
-            let Ok(hmap_lock) = self.hash_map.try_read() else {
+            let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
@@ -161,7 +161,7 @@ impl AntDB {
         };
 
         if is_expire {
-            if let Ok(mut hmap_lock) = self.hash_map.try_write() {
+            if let Ok(mut hmap_lock) = self.hash_map.write() {
                 hmap_lock.remove(&key);
             }
 
@@ -180,7 +180,7 @@ impl AntDB {
     }
 
     pub fn exist(&self, key: String) -> Result<i64, BoxError> {
-        let Ok(hmap_lock) = self.hash_map.try_read() else {
+        let Ok(hmap_lock) = self.hash_map.read() else {
             return Err(Box::from("error lock"));
         };
 
@@ -196,7 +196,7 @@ impl AntDB {
     }
 
     pub fn del(&self, key: String) -> Result<String, BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.try_write() else {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
