@@ -5,8 +5,15 @@
   "main": "index.js",
   "scripts": {
     "build": "cargo build --release",
-    "build_linux": "cargo zigbuild --release --target x86_64-unknown-linux-musl"
+    "build_linux": "cargo zigbuild --release --target x86_64-unknown-linux-musl",
+    "run_test_node" : "cd ../nodeTester/ && npm run run_node",
+    "cargo_run" : "cargo run",
+    "sleep" : "node -e \"setTimeout(() => {}, 3000)\"",
+    "test" : "concurrently -n \"AntDb,Sleep,Test\" npm:cargo_run npm:sleep npm:run_test_node "
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "concurrently": "^10.0.3"
+  }
 }
