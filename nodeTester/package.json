@@ -4,12 +4,16 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "run": "tsx ./src/index.ts"
+    "run_db": "..\\AntDBRust\\target\\release\\AntDB.exe",
+    "run_node": "tsx ./src/index.ts",
+    "run": "concurrently --names \"AntDB,Node\" --prefix-colors \"blue,green\" \"npm run run_db\" \"npm run run_node\""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "concurrently": "^10.0.3",
     "ioredis": "^5.11.1",
+    "npm-run-all": "^4.1.5",
     "tsx": "^4.22.4"
   },
   "devDependencies": {

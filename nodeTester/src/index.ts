@@ -1,6 +1,8 @@
 // Haryanto 14 Juni 2026
 import Redis from 'ioredis';
 import * as net from 'net';
+import { sleep } from './sleep'; 
+import { testExpire } from './testexp';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -14,11 +16,7 @@ const redis: Redis = new Redis({
     port: redisPort,
 });
 
-function sleep(n: number) {
-    return new Promise((r, x) => {
-        setTimeout(r, n);
-    })
-}
+
 
 async function sendRawPing() {
     let port = redisPort;
@@ -39,9 +37,9 @@ async function sendRawPing() {
         });
     });
 
-    console.log(response+ ":---");
+    console.log(response + ":---");
 
-    if (response == "+PONG\r\n"){
+    if (response == "+PONG\r\n") {
         console.log("✅ TEST sendRawPing PASSED SUCCESSFULLY!");
     } else {
         console.log(`Assertion Failed: sendRawPing`);
@@ -82,37 +80,7 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST SETEX PASSED SUCCESSFULLY!");
     }
 
-    async function testExpire() {
-        console.log("=== TEST EXPIRE ===");
-        const key = "testkey33";
-
-        // 1. Simpan token lalu atur TTL 3 detik
-        console.log('Storing token with a 3-second TTL...');
-        await redis.set(key, 'XYZ123');
-        await redis.expire(key, 3);
-
-        // 2. Ambil langsung (harus ada nilainya: 'XYZ123')
-        const tokenImmediate: string | null = await redis.get(key);
-        console.log('Immediate token check:', tokenImmediate);
-
-        if (tokenImmediate !== 'XYZ123') {
-            throw new Error(`Assertion Failed: Immediate token should be 'XYZ123', but got '${tokenImmediate}'`);
-        }
-
-        // 3. Tunggu selama 4 detik sampai data kedaluwarsa
-        console.log('Waiting for 4 seconds...');
-        await sleep(4000);
-
-        // 4. Ambil setelah menunggu (harusnya sudah terhapus: null)
-        const tokenAfterWait: string | null = await redis.get(key);
-        console.log('Token after 4 seconds:', tokenAfterWait);
-
-        if (tokenAfterWait !== null) {
-            throw new Error(`Assertion Failed: Token should be expired and return null, but instead found: '${tokenAfterWait}'`);
-        }
-
-        console.log("✅ TEST EXPIRE PASSED SUCCESSFULLY!");
-    }
+    
 
     async function testSet() {
         console.log("=== TEST SET ===");
@@ -193,20 +161,22 @@ async function testServer(): Promise<void> {
         const pingWithArg = await redis.call('PING', 'Hello AntDb');
         console.log('PING with argument result:', pingWithArg); // Output yang diharapkan: Hello AntDb
 
-        console.log('\n-----------------------------------\n'); 
+        console.log('\n-----------------------------------\n');
 
 
         console.log("Testing raw ping--------------------------")
         await sendRawPing();
-        console.log('\n-----------------------------------\n'); 
+        console.log('\n-----------------------------------\n');
 
 
         await testSet();
         console.log('\n-----------------------------------\n');
         await testSetex();
         console.log('\n-----------------------------------\n');
-        await testExpire();
-        
+
+
+        await testExpire(redis); 
+
         console.log('\n-----------------------------------\n');
         await testHset();
         console.log('\n-----------------------------------\n');
