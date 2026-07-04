@@ -93,6 +93,8 @@ impl ServerAntDb {
                                     "HGET" => self.resp_hget(values),
                                     "DEL" => self.resp_del(values),
                                     "EXISTS" => self.resp_exists(values),
+                                    
+                                    "TTL" => self.resp_ttl(values),
                                     _ => {
                                         println!("command unhandled : {}", command_name);
                                         let err_msg =
@@ -110,9 +112,10 @@ impl ServerAntDb {
                         }
                     }
                     Err(e) => {
-                        println!("ERROR DECODE {}", e); 
-                        let mut val = Value::Array(vec![]);  
-                        if remaining.starts_with(b"PING\r\n") || remaining.starts_with(b"ping\r\n") {
+                        println!("ERROR DECODE {}", e);
+                        let mut val = Value::Array(vec![]);
+                        if remaining.starts_with(b"PING\r\n") || remaining.starts_with(b"ping\r\n")
+                        {
                             println!("PING DETECTED");
                             val = Value::String("PONG".to_string());
                         }
@@ -128,8 +131,6 @@ impl ServerAntDb {
             }
         }
     }
-
- 
 
     fn resp_ping(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
@@ -296,10 +297,24 @@ impl ServerAntDb {
         };
 
         match self.app_ctx.ant_db.del(key) {
-            Ok(result) => Value::Integer(result.parse::<i64>().unwrap_or(0)),
+            Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }
     }
 
+    pub fn resp_ttl(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
 
+        let db = &self.app_ctx.ant_db;
+        match db.ttl(key) {
+            Ok(result) => Value::Integer(result),
+            Err(_) => Value::Integer(0),
+        }
+    }
 }

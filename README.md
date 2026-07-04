@@ -61,7 +61,7 @@ antdb-server.exe
 
 ### Next to Implement
 - TTL / Expiry
-  - ⏳ TTL
+  - ✅ TTL
   - ⏳ PTTL
   - ⏳ PERSIST
 - Hash Extensions
