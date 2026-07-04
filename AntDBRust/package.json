@@ -8,7 +8,7 @@
     "build_linux": "cargo zigbuild --release --target x86_64-unknown-linux-musl",
     "run_test_node" : "cd ../nodeTester/ && npm run run_node",
     "cargo_run" : "cargo run",
-    "sleep" : "node -e \"setTimeout(() => {}, 3000)\"",
+    "sleep" : "node -e \"setTimeout(() => {}, 5000)\"",
     "test" : "concurrently -n \"AntDb,Sleep,Test\" npm:cargo_run npm:sleep npm:run_test_node "
   },
   "author": "",

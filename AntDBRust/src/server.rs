@@ -129,15 +129,7 @@ impl ServerAntDb {
         }
     }
 
-    fn resp_get_val(&self,  mut values: Vec<Value> )->Result<Value,String>{
-        if values.is_empty(){
-            return Err("value is empty".to_string());
-        }
-
-        let val = values.remove(0);
-
-        Ok(val) 
-    }
+ 
 
     fn resp_ping(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
