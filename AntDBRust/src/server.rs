@@ -93,8 +93,9 @@ impl ServerAntDb {
                                     "HGET" => self.resp_hget(values),
                                     "DEL" => self.resp_del(values),
                                     "EXISTS" => self.resp_exists(values),
-                                    
+
                                     "TTL" => self.resp_ttl(values),
+                                    "PTTL" => self.resp_pttl(values),
                                     _ => {
                                         println!("command unhandled : {}", command_name);
                                         let err_msg =
@@ -312,9 +313,34 @@ impl ServerAntDb {
         };
 
         let db = &self.app_ctx.ant_db;
-        match db.ttl(key) {
-            Ok(result) => Value::Integer(result),
-            Err(_) => Value::Integer(0),
+        match db.pttl(key) {
+            Ok(ms_result) => {
+                // return without convertion if -2 or -1
+                let final_ttl = if ms_result < 0 {
+                    ms_result
+                } else {
+                    // convert with roundup as redis standard
+                    (ms_result + 999) / 1000
+                };
+                Value::Integer(final_ttl)
+            }
+            Err(_) => Value::Integer(-2),
+        }
+    }
+
+    pub fn resp_pttl(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db;
+        match db.pttl(key) {
+            Ok(ms_result) => Value::Integer(ms_result), // Langsung ambil milidetik murninya
+            Err(_) => Value::Integer(-2),
         }
     }
 }

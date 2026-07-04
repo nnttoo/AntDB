@@ -207,7 +207,7 @@ impl AntDB {
         }
     }
 
-    pub fn ttl(&self, key: String) -> Result<i64, BoxError> {
+    pub fn pttl(&self, key: String) -> Result<i64, BoxError> {
         let now = Instant::now();
         let mut is_expire = false;
         let mut ttl_value = -2; // Default: -2 if key is not found
@@ -226,7 +226,7 @@ impl AntDB {
                     } else {
                         // Calculate remaining time until expiration in seconds
                         let duration = expiry.duration_since(now);
-                        ttl_value = duration.as_secs() as i64;
+                        ttl_value = duration.as_millis() as i64;
                     }
                 } else {
                     ttl_value = -1; // Permanent data (expires_at is None)
