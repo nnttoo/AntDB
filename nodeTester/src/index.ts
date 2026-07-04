@@ -1,8 +1,9 @@
 // Haryanto 14 Juni 2026
 import Redis from 'ioredis';
 import * as net from 'net';
-import { sleep } from './sleep'; 
+import { sleep } from './sleep';
 import { testExpire } from './testexp';
+import { testPersist } from './test_persist';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -80,7 +81,7 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST SETEX PASSED SUCCESSFULLY!");
     }
 
-    
+
 
     async function testSet() {
         console.log("=== TEST SET ===");
@@ -148,49 +149,45 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST EXISTS PASSED SUCCESSFULLY!");
     }
 
-    try {
-        console.log('--- Starting AntDb Replica Tests ---\n');
+    console.log('--- Starting AntDb Replica Tests ---\n');
 
-        // 1. Test PING commands (Standard and with arguments)
-        console.log('Testing PING without arguments...');
-        const pingStandard = await redis.ping();
-        console.log('PING result:', pingStandard); // Output yang diharapkan: PONG
+    // 1. Test PING commands (Standard and with arguments)
+    console.log('Testing PING without arguments...');
+    const pingStandard = await redis.ping();
+    console.log('PING result:', pingStandard); // Output yang diharapkan: PONG
 
-        console.log('Testing PING with custom message...');
-        // Catatan: ioredis mengirim argumen ping lewat pemanggilan method langsung atau .call()
-        const pingWithArg = await redis.call('PING', 'Hello AntDb');
-        console.log('PING with argument result:', pingWithArg); // Output yang diharapkan: Hello AntDb
+    console.log('Testing PING with custom message...');
+    // Catatan: ioredis mengirim argumen ping lewat pemanggilan method langsung atau .call()
+    const pingWithArg = await redis.call('PING', 'Hello AntDb');
+    console.log('PING with argument result:', pingWithArg); // Output yang diharapkan: Hello AntDb
 
-        console.log('\n-----------------------------------\n');
-
-
-        console.log("Testing raw ping--------------------------")
-        await sendRawPing();
-        console.log('\n-----------------------------------\n');
+    console.log('\n-----------------------------------\n');
 
 
-        await testSet();
-        console.log('\n-----------------------------------\n');
-        await testSetex();
-        console.log('\n-----------------------------------\n');
+    console.log("Testing raw ping--------------------------")
+    await sendRawPing();
+    console.log('\n-----------------------------------\n');
 
 
-        await testExpire(redis); 
-
-        console.log('\n-----------------------------------\n');
-        await testHset();
-        console.log('\n-----------------------------------\n');
-        await testDel();
-        console.log('\n-----------------------------------\n');
-        await testExists();
+    await testSet();
+    console.log('\n-----------------------------------\n');
+    await testSetex();
+    console.log('\n-----------------------------------\n');
 
 
-    } catch (error) {
-        console.error('An error occurred during testing:', error);
-    } finally {
-        redis.disconnect();
-        console.log('\n--- Tests Completed & Disconnected ---');
-    }
+    await testExpire(redis);
+
+    console.log('\n-----------------------------------\n');
+    await testHset();
+    console.log('\n-----------------------------------\n');
+    await testDel();
+    console.log('\n-----------------------------------\n');
+    await testExists();
+
+    await testPersist(redis);
+
+
+
 }
 
 testServer();
