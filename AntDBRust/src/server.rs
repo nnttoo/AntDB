@@ -162,7 +162,10 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        match self.app_ctx.ant_db.set(key, value) {
+        let db = &self.app_ctx.ant_db.db;
+
+
+        match db.set(key, value) {
             Ok(()) => Value::String("OK".to_string()),
             _ => Value::Null,
         }
@@ -177,7 +180,9 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        match self.app_ctx.ant_db.get(key_bytes) {
+        let db = &self.app_ctx.ant_db.db;
+
+        match db.get(key_bytes) {
             Ok(data) => Value::String(data),
             Err(_) => Value::Null,
         }
@@ -194,8 +199,9 @@ impl ServerAntDb {
         let (Value::Bulk(key), Value::Bulk(field)) = (key_variant, field_variant) else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
+        let db = &self.app_ctx.ant_db.db;
 
-        match self.app_ctx.ant_db.hget(key, field) {
+        match db.hget(key, field) {
             Ok(value) => Value::Bulk(value),
             Err(_) => Value::Null,
         }
@@ -215,8 +221,9 @@ impl ServerAntDb {
         else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
+        let db = &self.app_ctx.ant_db.db;
 
-        match self.app_ctx.ant_db.hset(key, field, value) {
+        match db.hset(key, field, value) {
             Ok(_) => Value::String("OK".to_string()),
             Err(e) => Value::Error(e.to_string()),
         }
@@ -242,7 +249,11 @@ impl ServerAntDb {
             return Value::Error("error parse ttl".to_string());
         };
 
-        match self.app_ctx.ant_db.setex(key, ttl, value) {
+
+        let db = &self.app_ctx.ant_db.db;
+
+
+        match db.setex(key, ttl, value) {
             Ok(_) => Value::String("OK".to_string()),
             Err(e) => Value::Error(e.to_string()),
         }
@@ -266,7 +277,8 @@ impl ServerAntDb {
             return Value::Error("error parse ttl".to_string());
         };
 
-        match self.app_ctx.ant_db.expire(key, ttl) {
+        let db = &self.app_ctx.ant_db.db;
+        match db.expire(key, ttl) {
             Ok(_) => Value::String("OK".to_string()),
             Err(_) => Value::Null,
         }
@@ -282,7 +294,8 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        match self.app_ctx.ant_db.exist(key) {
+        let db = &self.app_ctx.ant_db.db;
+        match db.exist(key) {
             Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }
@@ -298,7 +311,8 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        match self.app_ctx.ant_db.del(key) {
+        let db = &self.app_ctx.ant_db.db;
+        match db.del(key) {
             Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }
@@ -313,7 +327,7 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let db = &self.app_ctx.ant_db;
+        let db = &self.app_ctx.ant_db.db;
         match db.pttl(key) {
             Ok(ms_result) => {
                 // return without convertion if -2 or -1
@@ -338,7 +352,7 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let db = &self.app_ctx.ant_db;
+        let db = &self.app_ctx.ant_db.db;
         match db.pttl(key) {
             Ok(ms_result) => Value::Integer(ms_result), // Langsung ambil milidetik murninya
             Err(_) => Value::Integer(-2),
@@ -353,10 +367,10 @@ impl ServerAntDb {
         let Value::Bulk(key) = values.remove(0) else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
-        let db = &self.app_ctx.ant_db;
+        let db = &self.app_ctx.ant_db.db;
         match db.persist(key) {
             Ok(r) => Value::Integer(r),
-            Err(d)=>Value::Error(d.to_string())
-        } 
+            Err(d) => Value::Error(d.to_string()),
+        }
     }
 }

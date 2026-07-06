@@ -1,11 +1,11 @@
 use std::sync::Arc;
 
-use crate::{config::{ServerConfig, ServerConfigArc}, db::{AntDB, AntDbArc}};
+use crate::{config::{ServerConfig, ServerConfigArc}, db_all::AntDBAll};
 
 
 pub struct AppCtx{
     pub server_config : ServerConfigArc,
-    pub ant_db : AntDbArc
+    pub ant_db : Arc<AntDBAll>
 }
 
 pub type  AppCtxArc = Arc<AppCtx>;
@@ -20,7 +20,7 @@ impl AppCtx {
         
         let app_ctx = AppCtx{
             server_config : server_config,
-            ant_db : AntDB::create_arc()
+            ant_db : AntDBAll::new()
         };
 
         app_ctx.to_arc()

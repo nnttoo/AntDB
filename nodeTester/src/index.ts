@@ -4,7 +4,7 @@ import * as net from 'net';
 import { sleep } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
-import { testHset } from './test_hset';
+import { testHdelMultiFields, testHset } from './test_hset';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -170,8 +170,11 @@ async function testServer(): Promise<void> {
 
     await testPersist(redis);
 
+    console.log("\n\n\n");
+    await testHdelMultiFields(redis);
+    console.log("\n\n\n");
     
-    console.log('\n-----------------------------------\n'); 
+    console.log('\nTESTING DONE, REDIST DISCONNECT\n'); 
     redis.disconnect();
 
 }

@@ -4,7 +4,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::BoxError;
+use crate::{BoxError};
 #[derive(Clone)]
 pub enum CacheType {
     String(String),
@@ -32,13 +32,12 @@ impl CacheItem {
 
 type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
 pub struct AntDB {
-    hash_map: HashDB,
+    hash_map: HashDB, 
 }
-
-pub type AntDbArc = Arc<AntDB>;
+ 
 
 impl AntDB {
-    pub fn create_arc() -> AntDbArc {
+    pub fn create_arc() -> Arc<Self> {
         Arc::new(AntDB {
             hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
