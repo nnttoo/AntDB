@@ -90,8 +90,8 @@ antdb-server.exe
 ## Benchmark Result
 
 
-| *Test* | *RPS* | *Avg Latency (ms)* | *Min Latency (ms)* | *P50 Latency (ms)* | *P95 Latency (ms)* | *P99 Latency (ms)* | *Max Latency (ms)* |
-| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- | 
+| test | rps | avg_latency_ms | min_latency_ms | p50_latency_ms | p95_latency_ms | p99_latency_ms | max_latency_ms |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | **PING_INLINE** | 88028.16 | 0.086 | 0.008 | 0.063 | 0.223 | 0.351 | 1.351 |
 | **PING_MBULK** | 122249.38 | 0.062 | 0.000 | 0.047 | 0.151 | 0.207 | 1.263 |
 | **SET** | 88183.43 | 0.080 | 0.000 | 0.055 | 0.231 | 0.351 | 0.967 |
