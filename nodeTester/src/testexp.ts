@@ -4,7 +4,7 @@ import Redis from "ioredis";
 import { sleep } from "./sleep";
 
 export async function testExpire(redis: Redis) {
-    console.log("=== TEST EXPIRE, TTL, & PTTL ===");
+    console.log("\n\n\n=== TEST EXPIRE, TTL, & PTTL ===");
     const key = "testkey33";
 
     // 1. Simpan token lalu atur TTL 3 detik

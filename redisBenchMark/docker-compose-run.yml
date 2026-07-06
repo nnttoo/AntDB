@@ -23,8 +23,10 @@ services:
         COPY ./nodeTester/package*.json ./
         RUN npm install
         COPY ./nodeTester .
-        WORKDIR /working_dir
-        ENTRYPOINT ["/docker_entry/entrypoint_run.sh"] 
+        WORKDIR /working_dir  
+        ENTRYPOINT []
+        # Gunakan CMD shell form untuk memperbaiki file dan mengeksekusinya
+        CMD dos2unix /docker_entry/entrypoint_run.sh && sh /docker_entry/entrypoint_run.sh
   
     volumes:
       # Map host folder to container path

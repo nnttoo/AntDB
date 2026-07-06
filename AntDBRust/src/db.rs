@@ -61,7 +61,7 @@ impl AntDB {
     }
 
     pub fn get(&self, key: String) -> Result<String, BoxError> {
-        let (is_expire, value) = {
+        let data = {
             let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
@@ -70,20 +70,14 @@ impl AntDB {
                 return Err(Box::from("no key font"));
             };
 
-            let value = data.value.clone();
-            let is_expire = data.is_expired();
-            (is_expire, value)
+            data.clone()
         };
 
-        if is_expire {
-            if let Ok(mut hmap_lock) = self.hash_map.write() {
-                hmap_lock.remove(&key);
-            }
-
+        if self.expire_delete(key, &data) {
             return Err(Box::from("key is expire"));
         }
 
-        let CacheType::String(value_str) = value else {
+        let CacheType::String(value_str) = data.value else {
             return Err(Box::from("data is not string"));
         };
 
@@ -120,6 +114,19 @@ impl AntDB {
         Ok(())
     }
 
+    fn expire_delete(&self, key: String, data: &CacheItem) -> bool {
+        if !data.is_expired() {
+            return false;
+        }
+
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
+            return false;
+        };
+
+        hmap_lock.remove(&key);
+        true
+    }
+
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
@@ -145,7 +152,7 @@ impl AntDB {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let (is_expire, value) = {
+        let data = {
             let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
@@ -154,21 +161,13 @@ impl AntDB {
                 return Err(Box::from("no key found"));
             };
 
-            let is_expire = data.is_expired();
-            let value = data.value.clone();
-
-            (is_expire, value)
+            data.clone()
         };
 
-        if is_expire {
-            if let Ok(mut hmap_lock) = self.hash_map.write() {
-                hmap_lock.remove(&key);
-            }
-
+        if self.expire_delete(key, &data) {
             return Err(Box::from("key is expire"));
         }
-
-        let CacheType::Hash(hash_map) = value else {
+        let CacheType::Hash(hash_map) = data.value else {
             return Err(Box::from("data is not hash"));
         };
 
@@ -208,39 +207,55 @@ impl AntDB {
     }
 
     pub fn pttl(&self, key: String) -> Result<i64, BoxError> {
-        let now = Instant::now();
-        let mut is_expire = false;
-        let mut ttl_value = -2; // Default: -2 if key is not found
+        // ttl_value
+        // -2 NotFound/Expire
+        // -1 Permanent
 
         // Create a temporary scope for the read lock to prevent deadlocks
-        {
+        let data = {
             let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
-            if let Some(data) = hmap_lock.get(&key) {
-                if let Some(expiry) = data.expires_at {
-                    if now > expiry {
-                        is_expire = true;
-                        ttl_value = -2; // Key has expired, treat it as not found
-                    } else {
-                        // Calculate remaining time until expiration in seconds
-                        let duration = expiry.duration_since(now);
-                        ttl_value = duration.as_millis() as i64;
-                    }
-                } else {
-                    ttl_value = -1; // Permanent data (expires_at is None)
-                }
-            }
+            let Some(data) = hmap_lock.get(&key) else {
+                return Ok(-2);
+            };
+
+            data.clone()
+        };
+
+        let Some(expiry) = data.expires_at else {
+            return Ok(-1); //  is permanent
+        };
+
+        if self.expire_delete(key, &data) {
+            return Ok(-2); // Expire -2
         }
 
-        // Lazy expiration: if the key is expired, remove it from memory immediately
-        if is_expire {
-            if let Ok(mut hmap_lock) = self.hash_map.write() {
-                hmap_lock.remove(&key);
-            }
-        }
+        let now = Instant::now();
+        let duration = expiry.duration_since(now);
+        let ttl_value = duration.as_millis() as i64;
 
         Ok(ttl_value)
+    }
+
+    pub fn persist(&self, key: String) -> Result<i64, BoxError> {
+        let Ok(mut hmap_lock) = self.hash_map.write() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get(&key) else {
+             return Err(Box::from("key not found"));
+        };
+
+        let Some(_) = &data.expires_at  else  {
+            return Ok(0);
+        };
+
+        let mut data_clone = data.clone(); 
+        data_clone.expires_at = None;
+        hmap_lock.insert(key, data_clone);
+
+        Ok(1)
     }
 }

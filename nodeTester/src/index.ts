@@ -186,7 +186,9 @@ async function testServer(): Promise<void> {
 
     await testPersist(redis);
 
-
+    
+    console.log('\n-----------------------------------\n'); 
+    redis.disconnect();
 
 }
 

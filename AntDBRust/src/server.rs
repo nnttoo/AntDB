@@ -96,6 +96,7 @@ impl ServerAntDb {
 
                                     "TTL" => self.resp_ttl(values),
                                     "PTTL" => self.resp_pttl(values),
+                                    "PERSIST" => self.resp_persist(values),
                                     _ => {
                                         println!("command unhandled : {}", command_name);
                                         let err_msg =
@@ -342,5 +343,20 @@ impl ServerAntDb {
             Ok(ms_result) => Value::Integer(ms_result), // Langsung ambil milidetik murninya
             Err(_) => Value::Integer(-2),
         }
+    }
+
+    pub fn resp_persist(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
+        }
+
+        let Value::Bulk(key) = values.remove(0) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+        let db = &self.app_ctx.ant_db;
+        match db.persist(key) {
+            Ok(r) => Value::Integer(r),
+            Err(d)=>Value::Error(d.to_string())
+        } 
     }
 }

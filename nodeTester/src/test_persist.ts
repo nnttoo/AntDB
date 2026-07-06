@@ -3,7 +3,7 @@
 import Redis from "ioredis";
 
 export async function testPersist(redis: Redis) {
-    console.log("=== TEST PERSIST ===");
+    console.log("\n\n\n=== TEST PERSIST ===");
     const key = "testkey_persist";
 
     // 1. Store data using SETEX with a 10-second TTL
