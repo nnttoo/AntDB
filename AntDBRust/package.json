@@ -9,7 +9,8 @@
     "run_test_node" : "cd ../nodeTester/ && npm run run_node",
     "cargo_run" : "cargo run",
     "sleep_and_test" : "node -e \"setTimeout(() => {}, 3000)\" && npm run run_test_node",
-    "run" : "concurrently -n  AntDb,Test npm:cargo_run npm:sleep_and_test"
+    "run" : "concurrently -n  AntDb,Test npm:cargo_run npm:sleep_and_test",
+    "benchmark" : "cd ../redisBenchMark/ && npm run run_all"
   },
   "author": "",
   "license": "ISC",

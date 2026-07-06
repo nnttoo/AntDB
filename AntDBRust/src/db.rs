@@ -152,7 +152,11 @@ impl AntDB {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let data = {
+        let mut r_value  = "".to_string();
+        let r_expire_at: Option<Instant>;
+        let mut r_error: Option<String>  = Some("not field found".to_string());
+
+        {
             let Ok(hmap_lock) = self.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
@@ -161,21 +165,35 @@ impl AntDB {
                 return Err(Box::from("no key found"));
             };
 
-            data.clone()
+            
+            r_expire_at = (&data).expires_at;
+
+            if !data.is_expired() {
+                if let CacheType::Hash(hash_map) = &data.value {
+                    if let Some(str_value) = hash_map.get(&field) {
+                        r_value = str_value.clone(); 
+                        r_error = None;
+
+                    }
+                } 
+            }   
         };
 
-        if self.expire_delete(key, &data) {
+        let dumy_data = CacheItem { 
+            value: CacheType::String(String::new()), 
+            expires_at: r_expire_at
+        };
+
+        if self.expire_delete(key,&dumy_data) {
             return Err(Box::from("key is expire"));
+        } 
+
+        if let Some(error_str) = r_error{
+             return Err(Box::from(error_str));
         }
-        let CacheType::Hash(hash_map) = data.value else {
-            return Err(Box::from("data is not hash"));
-        };
 
-        let Some(value) = hash_map.get(&field) else {
-            return Err(Box::from("field not found"));
-        };
+        Ok(r_value) 
 
-        Ok(value.clone())
     }
 
     pub fn exist(&self, key: String) -> Result<i64, BoxError> {
@@ -245,14 +263,14 @@ impl AntDB {
         };
 
         let Some(data) = hmap_lock.get(&key) else {
-             return Err(Box::from("key not found"));
+            return Err(Box::from("key not found"));
         };
 
-        let Some(_) = &data.expires_at  else  {
+        let Some(_) = &data.expires_at else {
             return Ok(0);
         };
 
-        let mut data_clone = data.clone(); 
+        let mut data_clone = data.clone();
         data_clone.expires_at = None;
         hmap_lock.insert(key, data_clone);
 

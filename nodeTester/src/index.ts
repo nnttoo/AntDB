@@ -4,6 +4,7 @@ import * as net from 'net';
 import { sleep } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
+import { testHset } from './test_hset';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -101,24 +102,7 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST SET PASSED SUCCESSFULLY!");
     }
 
-    async function testHset() {
-        console.log("=== TEST HSET ===");
-        const key = "testhash";
-        const field = "name";
-        const value = "AntDb";
-
-        console.log('Storing hash field with HSET...');
-        await redis.hset(key, field, value);
-
-        const storedValue: string | null = await redis.hget(key, field);
-        console.log('Hash field value check:', storedValue);
-
-        if (storedValue !== value) {
-            throw new Error(`Assertion Failed: HSET should store '${value}' at field '${field}', but got '${storedValue}'`);
-        }
-
-        console.log("✅ TEST HSET PASSED SUCCESSFULLY!");
-    }
+    
 
     async function testDel() {
         console.log("=== TEST DEL ===");
@@ -178,7 +162,7 @@ async function testServer(): Promise<void> {
     await testExpire(redis);
 
     console.log('\n-----------------------------------\n');
-    await testHset();
+    await testHset(redis);
     console.log('\n-----------------------------------\n');
     await testDel();
     console.log('\n-----------------------------------\n');
