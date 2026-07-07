@@ -1,7 +1,5 @@
 use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-    time::{Duration, Instant},
+    collections::HashMap, sync::{Arc, RwLock, RwLockWriteGuard}, time::{Duration, Instant},
 };
 
 use crate::{BoxError};
@@ -11,9 +9,9 @@ pub enum CacheType {
     Hash(HashMap<String, String>),
 }
 #[derive(Clone)]
-struct CacheItem {
-    value: CacheType,
-    expires_at: Option<Instant>, // Jika None, berarti data permanen
+pub struct CacheItem {
+    pub value: CacheType,
+    pub expires_at: Option<Instant>, // Jika None, berarti data permanen
 }
 
 impl CacheItem {
@@ -30,9 +28,9 @@ impl CacheItem {
     }
 }
 
-type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
+pub type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
 pub struct AntDB {
-    hash_map: HashDB, 
+    pub hash_map: HashDB, 
 }
  
 
@@ -41,8 +39,7 @@ impl AntDB {
         Arc::new(AntDB {
             hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
-    }
-
+    } 
     pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error locck"));
@@ -124,31 +121,7 @@ impl AntDB {
 
         hmap_lock.remove(&key);
         true
-    }
-
-    pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.write() else {
-            return Err(Box::from("error lock"));
-        };
-
-        let entry = hmap_lock.entry(key).or_insert(CacheItem {
-            value: CacheType::Hash(HashMap::new()),
-            expires_at: None,
-        });
-
-        match &mut entry.value {
-            CacheType::Hash(hash_map) => {
-                hash_map.insert(field, value);
-            }
-            CacheType::String(_) => {
-                let mut hash_map = HashMap::new();
-                hash_map.insert(field, value);
-                entry.value = CacheType::Hash(hash_map);
-            }
-        }
-
-        Ok(())
-    }
+    } 
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
         let mut r_value  = "".to_string();

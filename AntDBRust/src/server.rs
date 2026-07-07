@@ -221,7 +221,7 @@ impl ServerAntDb {
         else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
-        let db = &self.app_ctx.ant_db.db;
+        let db = &self.app_ctx.ant_db.db_hash;
 
         match db.hset(key, field, value) {
             Ok(_) => Value::String("OK".to_string()),
