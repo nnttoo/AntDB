@@ -1,5 +1,5 @@
 use std::{
-    collections::HashMap, sync::{Arc, RwLock, RwLockWriteGuard}, time::{Duration, Instant},
+    collections::HashMap, sync::{Arc, RwLock}, time::{Duration, Instant},
 };
 
 use crate::{BoxError};
@@ -110,7 +110,7 @@ impl AntDB {
         Ok(())
     }
 
-    fn expire_delete(&self, key: String, data: &CacheItem) -> bool {
+    pub fn expire_delete(&self, key: String, data: &CacheItem) -> bool {
         if !data.is_expired() {
             return false;
         }
@@ -121,52 +121,7 @@ impl AntDB {
 
         hmap_lock.remove(&key);
         true
-    } 
-
-    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let mut r_value  = "".to_string();
-        let r_expire_at: Option<Instant>;
-        let mut r_error: Option<String>  = Some("not field found".to_string());
-
-        {
-            let Ok(hmap_lock) = self.hash_map.read() else {
-                return Err(Box::from("error lock"));
-            };
-
-            let Some(data) = hmap_lock.get(&key) else {
-                return Err(Box::from("no key found"));
-            };
-
-            
-            r_expire_at = (&data).expires_at;
-
-            if !data.is_expired() {
-                if let CacheType::Hash(hash_map) = &data.value {
-                    if let Some(str_value) = hash_map.get(&field) {
-                        r_value = str_value.clone(); 
-                        r_error = None;
-
-                    }
-                } 
-            }   
-        };
-
-        let dumy_data = CacheItem { 
-            value: CacheType::String(String::new()), 
-            expires_at: r_expire_at
-        };
-
-        if self.expire_delete(key,&dumy_data) {
-            return Err(Box::from("key is expire"));
-        } 
-
-        if let Some(error_str) = r_error{
-             return Err(Box::from(error_str));
-        }
-
-        Ok(r_value) 
-
-    }
+    }  
 
     pub fn exist(&self, key: String) -> Result<i64, BoxError> {
         let Ok(hmap_lock) = self.hash_map.read() else {

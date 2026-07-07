@@ -6,7 +6,7 @@ use std::{
 use resp::{Decoder, Value};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener, TcpStream},
+    net::{TcpListener},
 };
 use tokio_util::bytes::BytesMut;
 
@@ -36,8 +36,7 @@ impl ServerAntDb {
                 self_clone.child_open(socket).await;
             });
         }
-
-        Ok(())
+ 
     }
 
     async fn child_open(self: ServerAntDbArc, mut socket: tokio::net::TcpStream) {
@@ -199,7 +198,7 @@ impl ServerAntDb {
         let (Value::Bulk(key), Value::Bulk(field)) = (key_variant, field_variant) else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
-        let db = &self.app_ctx.ant_db.db;
+        let db = &self.app_ctx.ant_db.db_hash;
 
         match db.hget(key, field) {
             Ok(value) => Value::Bulk(value),
