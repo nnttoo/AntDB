@@ -69,7 +69,7 @@ impl AntDBHash {
         let item = match self.get_cache_item(&key) {
             Err(e) => return Err(e),
             Ok(data) => data,
-        }; 
+        };
 
         let CacheType::Hash(hchild) = &item.value else {
             return Err(Box::from("value is not hashmap"));
@@ -98,7 +98,7 @@ impl AntDBHash {
         let item = match self.get_cache_item(&key) {
             Err(e) => return Err(e),
             Ok(data) => data,
-        }; 
+        };
 
         let CacheType::Hash(child_hash) = &item.value else {
             return Err(Box::from("cacheitem is not hashmap"));
@@ -122,6 +122,18 @@ impl AntDBHash {
             Ok(data) => data,
         };
 
-        Ok(0)
+        let CacheType::Hash(child_hash) = &item.value else {
+            return Err(Box::from("cacheitem is not hashmap"));
+        };
+
+        let len = match child_hash.len() {
+            Ok(l) => l,
+            Err(e) => return Err(e),
+        };
+
+        match i64::try_from(len) {
+            Ok(nilai) => Ok(nilai),
+            Err(_) => return Err(Box::from("error parse len".to_string())),
+        }
     }
 }

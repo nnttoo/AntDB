@@ -73,9 +73,20 @@ impl ServerAntDbRespHashMap {
         }
     }
 
-    pub fn hlen(&self, key: &str) -> Value {
+    pub fn hlen(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR Resp argument is empty".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
 
-        
-        Value::Null
+        let db = &self.app_ctx.ant_db.db_hash;
+
+        match db.hlen(&key) {
+            Ok(len) => Value::Integer(len),
+            Err(_) => Value::Integer(0),
+        }
     }
 }
