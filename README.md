@@ -58,14 +58,13 @@ antdb-server.exe
 - Hash Commands
   - ✅ HSET
   - ✅ HGET
-
-### Next to Implement
+ 
 - TTL / Expiry
   - ✅ TTL
   - ✅ PTTL
   - ✅ PERSIST
 - Hash Extensions
-  - ⏳ HDEL
+  - ✅ HDEL
   - ⏳ HLEN
   - ⏳ HEXISTS
   - ⏳ HMGET
