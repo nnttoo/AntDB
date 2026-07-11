@@ -44,7 +44,7 @@ impl AntDBString {
             data.clone()
         };
 
-        if self.db.expire_delete(key, &data) {
+        if self.db.expire_delete(&key, &data) {
             return Err(Box::from("key is expire"));
         }
 

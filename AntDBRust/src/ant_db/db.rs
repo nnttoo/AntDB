@@ -59,7 +59,7 @@ impl AntDB {
         Ok(())
     }
 
-    pub fn expire_delete(&self, key: String, data: &CacheItem) -> bool {
+    pub fn expire_delete(&self, key: &str, data: &CacheItem) -> bool {
         if !data.is_expired() {
             return false;
         }
@@ -68,7 +68,7 @@ impl AntDB {
             return false;
         };
 
-        hmap_lock.remove(&key);
+        hmap_lock.remove(key);
         true
     }
 
@@ -127,7 +127,7 @@ impl AntDB {
             return Ok(-1); //  is permanent
         };
 
-        if self.expire_delete(key, &data) {
+        if self.expire_delete(&key, &data) {
             return Ok(-2); // Expire -2
         }
 

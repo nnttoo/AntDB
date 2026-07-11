@@ -59,7 +59,7 @@ impl AntDBHash {
             data.clone()
         };
 
-        if self.db.expire_delete(key, &data) {
+        if self.db.expire_delete(&key, &data) {
             return Err(Box::from("key is expire"));
         }
 
@@ -74,22 +74,48 @@ impl AntDBHash {
         Ok(val)
     }
 
-    pub fn hdel(&self, key: String, fields: Vec<String>) -> Result<u64, BoxError> {
-        let Ok(hmap_lock) = self.db.hash_map.read() else {
-            return Err(Box::from("error lock"));
+    fn hdel_if_empty(&self, key: &str, child: &AntDBHashChild) {
+        let Ok(len) = child.len() else {
+            return;
         };
 
-        let Some(child) = hmap_lock.get(&key) else {
-            return Err(Box::from("key not found"));
+        if len == 0 {
+            let list_del = vec![key.to_string()];
+
+            _ = self.db.del(list_del);
+        }
+    }
+
+    pub fn hdel(&self, key: String, fields: Vec<String>) -> Result<i64, BoxError> {
+        let child = {
+            let Ok(hmap_lock) = self.db.hash_map.read() else {
+                return Err(Box::from("error lock"));
+            };
+
+            let Some(child) = hmap_lock.get(&key) else {
+                return Ok(0);
+            };
+
+            child.clone()
         };
+
+        if self.db.expire_delete(&key, &child) {
+            return Err(Box::from("key is expire"));
+        }
 
         let CacheType::Hash(child_hash) = &child.value else {
             return Err(Box::from("cacheitem is not hashmap"));
         };
 
-        match child_hash.del(fields) {
-            Ok(deleted) => Ok(deleted),
-            Err(e) => Err(e),
-        }
+        let deleted = match child_hash.del(fields) {
+            Ok(deleted) => deleted,
+            Err(e) => {
+                return Err(e);
+            }
+        };
+
+        self.hdel_if_empty(&key, &child_hash);
+
+        Ok(deleted)
     }
 }

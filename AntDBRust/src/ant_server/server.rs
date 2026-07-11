@@ -100,8 +100,11 @@ impl ServerAntDb {
                                     "SETEX" => self.resp.setex(values),
                                     "EXPIRE" => self.resp.expire(values),
                                     "GET" => self.resp.get(values),
+
                                     "HSET" => self.resp_hashmap.hset(values),
                                     "HGET" => self.resp_hashmap.hget(values),
+                                    "HDEL" => self.resp_hashmap.hdel(values),
+
                                     "DEL" => self.resp.del(values),
                                     "EXISTS" => self.resp.exists(values),
 

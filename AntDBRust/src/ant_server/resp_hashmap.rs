@@ -1,5 +1,6 @@
 use resp::Value;
 
+use super::tools::get_list_fields;
 use crate::app_ctx::AppCtxArc;
 
 pub struct ServerAntDbRespHashMap {
@@ -50,6 +51,25 @@ impl ServerAntDbRespHashMap {
             Ok(_) => Value::String("OK".to_string()),
             Err(e) => Value::Error(e.to_string()),
         }
-    } 
-    
+    }
+
+    pub fn hdel(&self, mut values: Vec<Value>) -> Value {
+        if values.len() < 2 {
+            return Value::Error("ERR wrong number of arguments for 'hdel' command".to_string());
+        }
+
+        let key_variant = values.remove(0); 
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let fields = get_list_fields(&values);
+
+        let db = &self.app_ctx.ant_db.db_hash;
+
+        match db.hdel(key, fields) {
+            Ok(deleted) => Value::Integer(deleted),
+            Err(e) => Value::Error(e.to_string()),
+        }
+    }
 }
