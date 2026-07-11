@@ -66,7 +66,7 @@ antdb-server.exe
 - Hash Extensions
   - ✅ HDEL
   - ✅ HLEN
-  - ⏳ HEXISTS
+  - ✅ HEXISTS
   - ⏳ HMGET
   - ⏳ HKEYS
   - ⏳ HVALS
