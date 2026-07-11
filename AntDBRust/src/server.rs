@@ -160,7 +160,7 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let db = &self.app_ctx.ant_db.db;
+        let db = &self.app_ctx.ant_db.db_string;
 
         match db.set(key, value) {
             Ok(()) => Value::String("OK".to_string()),
@@ -177,7 +177,7 @@ impl ServerAntDb {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let db = &self.app_ctx.ant_db.db;
+        let db = &self.app_ctx.ant_db.db_string;
 
         match db.get(key_bytes) {
             Ok(data) => Value::String(data),
@@ -246,7 +246,7 @@ impl ServerAntDb {
             return Value::Error("error parse ttl".to_string());
         };
 
-        let db = &self.app_ctx.ant_db.db;
+        let db = &self.app_ctx.ant_db.db_string;
 
         match db.setex(key, ttl, value) {
             Ok(_) => Value::String("OK".to_string()),

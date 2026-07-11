@@ -4,12 +4,12 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::{BoxError, db_hashchild::AntDBHashChild };
+use crate::{BoxError, db_hashmap_child::AntDBHashChild, db_string_child::AntDBStringChild };
  
 
 #[derive(Clone)]
 pub enum CacheType {
-    String(String),
+    String(AntDBStringChild),
     Hash(AntDBHashChild),
 }
 #[derive(Clone)]
@@ -42,62 +42,7 @@ impl AntDB {
         Arc::new(AntDB {
             hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
-    }
-    pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.write() else {
-            return Err(Box::from("error locck"));
-        };
-
-        hmap_lock.insert(
-            key,
-            CacheItem {
-                value: CacheType::String(val),
-                expires_at: None,
-            },
-        );
-
-        Ok(())
-    }
-
-    pub fn get(&self, key: String) -> Result<String, BoxError> {
-        let data = {
-            let Ok(hmap_lock) = self.hash_map.read() else {
-                return Err(Box::from("error lock"));
-            };
-
-            let Some(data) = hmap_lock.get(&key) else {
-                return Err(Box::from("no key font"));
-            };
-
-            data.clone()
-        };
-
-        if self.expire_delete(key, &data) {
-            return Err(Box::from("key is expire"));
-        }
-
-        let CacheType::String(value_str) = data.value else {
-            return Err(Box::from("data is not string"));
-        };
-
-        Ok(value_str)
-    }
-
-    pub fn setex(&self, key: String, ttl: u64, val: String) -> Result<(), BoxError> {
-        let Ok(mut hmap_lock) = self.hash_map.write() else {
-            return Err(Box::from("error lock"));
-        };
-
-        hmap_lock.insert(
-            key,
-            CacheItem {
-                value: CacheType::String(val),
-                expires_at: Some(CacheItem::set_expire(ttl)),
-            },
-        );
-
-        Ok(())
-    }
+    } 
 
     pub fn expire(&self, key: String, ttl: u64) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {

@@ -3,7 +3,7 @@ use std::{sync::Arc, time::Instant};
 use crate::{
     BoxError,
     db::{AntDB, CacheItem, CacheType},
-    db_hashchild::AntDBHashChild,
+    db_hashmap_child::AntDBHashChild,
 };
 
 pub struct AntDBHash {
