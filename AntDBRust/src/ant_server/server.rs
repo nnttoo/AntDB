@@ -10,14 +10,15 @@ use tokio::{
 };
 use tokio_util::bytes::BytesMut;
 
-use crate::{app_ctx::AppCtxArc , utils_tools::BoxError};
-use super::{
-    server_resp::ServerAntDbResp
+use super::resp::ServerAntDbResp;
+use crate::{
+    ant_server::resp_hashmap::ServerAntDbRespHashMap, app_ctx::AppCtxArc, utils_tools::BoxError,
 };
 
 pub struct ServerAntDb {
     pub app_ctx: AppCtxArc,
-    pub resp: ServerAntDbResp,
+    resp: ServerAntDbResp,
+    resp_hashmap: ServerAntDbRespHashMap,
 }
 
 pub type ServerAntDbArc = Arc<ServerAntDb>;
@@ -26,7 +27,8 @@ impl ServerAntDb {
     pub fn new(app_ctx: AppCtxArc) -> Self {
         Self {
             app_ctx: app_ctx.clone(),
-            resp: ServerAntDbResp::new(app_ctx),
+            resp: ServerAntDbResp::new(app_ctx.clone()),
+            resp_hashmap: ServerAntDbRespHashMap::new(app_ctx),
         }
     }
 
@@ -98,14 +100,14 @@ impl ServerAntDb {
                                     "SETEX" => self.resp.setex(values),
                                     "EXPIRE" => self.resp.expire(values),
                                     "GET" => self.resp.get(values),
-                                    "HSET" => self.resp_hset(values),
-                                    "HGET" => self.resp_hget(values),
+                                    "HSET" => self.resp_hashmap.hset(values),
+                                    "HGET" => self.resp_hashmap.hget(values),
                                     "DEL" => self.resp.del(values),
                                     "EXISTS" => self.resp.exists(values),
 
                                     "TTL" => self.resp.ttl(values),
-                                    "PTTL" => self.resp_pttl(values),
-                                    "PERSIST" => self.resp_persist(values),
+                                    "PTTL" => self.resp.pttl(values),
+                                    "PERSIST" => self.resp.persist(values),
                                     _ => {
                                         println!("command unhandled : {}", command_name);
                                         let err_msg =
@@ -140,77 +142,6 @@ impl ServerAntDb {
             if consumed > 0 {
                 let _ = buf.split_to(consumed);
             }
-        }
-    }
-    fn resp_hget(&self, mut values: Vec<Value>) -> Value {
-        if values.len() < 2 {
-            return Value::Error("ERR wrong number of arguments for 'hget' command".to_string());
-        }
-
-        let key_variant = values.remove(0);
-        let field_variant = values.remove(0);
-
-        let (Value::Bulk(key), Value::Bulk(field)) = (key_variant, field_variant) else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-        let db = &self.app_ctx.ant_db.db_hash;
-
-        match db.hget(key, field) {
-            Ok(value) => Value::Bulk(value),
-            Err(_) => Value::Null,
-        }
-    }
-
-    fn resp_hset(&self, mut values: Vec<Value>) -> Value {
-        if values.len() < 3 {
-            return Value::Error("ERR wrong number of arguments for 'hset' command".to_string());
-        }
-
-        let key_variant = values.remove(0);
-        let field_variant = values.remove(0);
-        let val_variant = values.remove(0);
-
-        let (Value::Bulk(key), Value::Bulk(field), Value::Bulk(value)) =
-            (key_variant, field_variant, val_variant)
-        else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-        let db = &self.app_ctx.ant_db.db_hash;
-
-        match db.hset(key, field, value) {
-            Ok(_) => Value::String("OK".to_string()),
-            Err(e) => Value::Error(e.to_string()),
-        }
-    }
-
-    pub fn resp_pttl(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
-        }
-        let key_variant = values.remove(0);
-        let Value::Bulk(key) = key_variant else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db;
-        match db.pttl(key) {
-            Ok(ms_result) => Value::Integer(ms_result), // Langsung ambil milidetik murninya
-            Err(_) => Value::Integer(-2),
-        }
-    }
-
-    pub fn resp_persist(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
-        }
-
-        let Value::Bulk(key) = values.remove(0) else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-        let db = &self.app_ctx.ant_db.db;
-        match db.persist(key) {
-            Ok(r) => Value::Integer(r),
-            Err(d) => Value::Error(d.to_string()),
         }
     }
 }

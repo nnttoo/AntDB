@@ -2,7 +2,7 @@ use resp::Value;
 
 use crate::app_ctx::AppCtxArc;
 use super::{
-    server_tools::get_list_fields
+    tools::get_list_fields
 };
 
 pub struct ServerAntDbResp {
@@ -173,6 +173,37 @@ impl ServerAntDbResp {
                 Value::Integer(final_ttl)
             }
             Err(_) => Value::Integer(-2),
+        }
+    }
+
+    pub fn pttl(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db;
+        match db.pttl(key) {
+            Ok(ms_result) => Value::Integer(ms_result), // Langsung ambil milidetik murninya
+            Err(_) => Value::Integer(-2),
+        }
+    }
+
+    pub fn persist(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
+        }
+
+        let Value::Bulk(key) = values.remove(0) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+        let db = &self.app_ctx.ant_db.db;
+        match db.persist(key) {
+            Ok(r) => Value::Integer(r),
+            Err(d) => Value::Error(d.to_string()),
         }
     }
 }
