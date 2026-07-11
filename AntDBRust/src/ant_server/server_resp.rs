@@ -1,6 +1,9 @@
 use resp::Value;
 
-use crate::{app_ctx::AppCtxArc, server_tools::get_list_fields};
+use crate::app_ctx::AppCtxArc;
+use super::{
+    server_tools::get_list_fields
+};
 
 pub struct ServerAntDbResp {
     pub app_ctx: AppCtxArc,
@@ -137,8 +140,8 @@ impl ServerAntDbResp {
     pub fn del(&self, values: Vec<Value>) -> Value {
         if values.is_empty() {
             return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
-        } 
-        let keys = get_list_fields(&values); 
+        }
+        let keys = get_list_fields(&values);
         let db = &self.app_ctx.ant_db.db;
 
         // Oper Vec<String> langsung ke db.del yang baru
