@@ -1,15 +1,16 @@
+use super::{
+    db::{AntDB, CacheItem, CacheType},
+    db_string_child::AntDBStringChild,
+};
 use std::sync::Arc;
 
-use crate::{BoxError, db::{AntDB, CacheItem, CacheType}, db_string_child::AntDBStringChild};
-
-
-
+use crate::BoxError;
 
 pub struct AntDBString {
     db: Arc<AntDB>,
 }
 
-impl  AntDBString {
+impl AntDBString {
     pub fn new(db: Arc<AntDB>) -> Arc<Self> {
         Arc::new(Self { db: db })
     }
@@ -72,5 +73,5 @@ impl  AntDBString {
         );
 
         Ok(())
-    } 
+    }
 }

@@ -1,11 +1,12 @@
+use super::{db_hashmap_child::AntDBHashChild, db_string_child::AntDBStringChild};
+
 use std::{
     collections::HashMap,
     sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
 
-use crate::{BoxError, db_hashmap_child::AntDBHashChild, db_string_child::AntDBStringChild };
- 
+use crate::BoxError;
 
 #[derive(Clone)]
 pub enum CacheType {
@@ -42,7 +43,7 @@ impl AntDB {
         Arc::new(AntDB {
             hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
-    } 
+    }
 
     pub fn expire(&self, key: String, ttl: u64) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {
@@ -87,14 +88,14 @@ impl AntDB {
         Ok(1)
     }
 
-    pub fn del(&self, keys: Vec<String>) -> Result<i64, BoxError> { 
+    pub fn del(&self, keys: Vec<String>) -> Result<i64, BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
         let mut total_deleted = 0;
 
-        // Looping 
+        // Looping
         for key in keys {
             if hmap_lock.remove(&key).is_some() {
                 total_deleted += 1;

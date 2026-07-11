@@ -1,10 +1,11 @@
 use std::sync::Arc;
 
-use crate::{
-    BoxError,
+use super::{
     db::{AntDB, CacheItem, CacheType},
     db_hashmap_child::AntDBHashChild,
 };
+
+use crate::BoxError;
 
 pub struct AntDBHash {
     db: Arc<AntDB>,
@@ -85,12 +86,10 @@ impl AntDBHash {
         let CacheType::Hash(child_hash) = &child.value else {
             return Err(Box::from("cacheitem is not hashmap"));
         };
- 
+
         match child_hash.del(fields) {
-            Ok(deleted)=>Ok(deleted),
-            Err(e)=>{
-                Err(e)
-            }
+            Ok(deleted) => Ok(deleted),
+            Err(e) => Err(e),
         }
     }
 }
