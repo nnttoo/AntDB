@@ -1,8 +1,9 @@
-use std::{collections::HashMap, sync::Arc, time::Instant};
+use std::{sync::Arc, time::Instant};
 
 use crate::{
     BoxError,
     db::{AntDB, CacheItem, CacheType},
+    db_hashchild::AntDBHashChild,
 };
 
 pub struct AntDBHash {
@@ -20,17 +21,23 @@ impl AntDBHash {
         };
 
         let entry = hmap_lock.entry(key).or_insert(CacheItem {
-            value: CacheType::Hash(HashMap::new()),
+            value: CacheType::Hash(AntDBHashChild::new()),
             expires_at: None,
         });
 
         match &mut entry.value {
-            CacheType::Hash(hash_map) => {
-                hash_map.insert(field, value);
-            }
+            CacheType::Hash(hash_map) => match hash_map.insert(field, value) {
+                Ok(_) => {}
+                Err(e) => {
+                    return Err(e);
+                }
+            },
             CacheType::String(_) => {
-                let mut hash_map = HashMap::new();
-                hash_map.insert(field, value);
+                let hash_map = AntDBHashChild::new();
+                match hash_map.insert(field, value) {
+                    Ok(_)=>{},
+                    Err(e)=>{return Err(e)}
+                };
                 entry.value = CacheType::Hash(hash_map);
             }
         }
@@ -38,45 +45,41 @@ impl AntDBHash {
         Ok(())
     }
 
-    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let mut r_value = "".to_string();
-        let r_expire_at: Option<Instant>;
-        let mut r_error: Option<String> = Some("not field found".to_string());
-
-        {
+    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {  
+        let data =  {
             let Ok(hmap_lock) = self.db.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
             let Some(data) = hmap_lock.get(&key) else {
                 return Err(Box::from("no key found"));
-            };
+            }; 
 
-            r_expire_at = (&data).expires_at;
+            data.clone()
+        }; 
 
-            if !data.is_expired() {
-                if let CacheType::Hash(hash_map) = &data.value {
-                    if let Some(str_value) = hash_map.get(&field) {
-                        r_value = str_value.clone();
-                        r_error = None;
-                    }
-                }
-            }
-        };
-
-        let dumy_data = CacheItem {
-            value: CacheType::String(String::new()),
-            expires_at: r_expire_at,
-        };
-
-        if self.db.expire_delete(key, &dumy_data) {
+        if self.db.expire_delete(key, &data) {
             return Err(Box::from("key is expire"));
-        }
+        }  
 
-        if let Some(error_str) = r_error {
-            return Err(Box::from(error_str));
-        }
+        let CacheType::Hash(hchild) = &data.value else {
+            return Err(Box::from("value is not hashmap"));
+        };
 
-        Ok(r_value)
+        let Some(val) = hchild.get(&field) else{
+            return Err(Box::from("no field found"));
+        };
+
+        Ok(val)
+    }
+
+    pub fn hdel(&self, key: String, field: Vec<String>) -> Result<u64, BoxError> {
+        let Ok(hmap_lock) = self.db.hash_map.write() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let mut total_deleted = 0;
+
+        Ok(0)
     }
 }

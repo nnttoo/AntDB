@@ -9,6 +9,7 @@ mod utils_tools;
 mod config;
 mod db;
 mod db_hashmap;
+mod db_hashchild;
 mod db_all;
 mod server;
 

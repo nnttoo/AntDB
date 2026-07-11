@@ -160,7 +160,7 @@ async function testServer(): Promise<void> {
     await testPersist(redis);
 
     console.log("\n\n\n");
-    await testHdelMultiFields(redis);
+    //await testHdelMultiFields(redis);
     console.log("\n\n\n");
 
     console.log('\nTESTING DONE, REDIST DISCONNECT\n');

@@ -4,11 +4,13 @@ use std::{
     time::{Duration, Instant},
 };
 
-use crate::BoxError;
+use crate::{BoxError, db_hashchild::AntDBHashChild };
+ 
+
 #[derive(Clone)]
 pub enum CacheType {
     String(String),
-    Hash(HashMap<String, String>),
+    Hash(AntDBHashChild),
 }
 #[derive(Clone)]
 pub struct CacheItem {
