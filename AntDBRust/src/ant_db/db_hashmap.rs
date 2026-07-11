@@ -16,15 +16,23 @@ impl AntDBHash {
         Arc::new(Self { db: db })
     }
     fn get_cache_item(&self, key: &str) -> Result<CacheItem, BoxError> {
-        let Ok(hmap_lock) = self.db.hash_map.read() else {
-            return Err(Box::from("error lock"));
+        let item = {
+            let Ok(hmap_lock) = self.db.hash_map.read() else {
+                return Err(Box::from("error lock"));
+            };
+
+            let Some(data) = hmap_lock.get(key) else {
+                return Err(Box::from("no key found"));
+            };
+            data.clone()
         };
 
-        let Some(data) = hmap_lock.get(key) else {
-            return Err(Box::from("no key found"));
-        };
+        // Delete if expire
+        if self.db.expire_delete(&key, &item) {
+            return Err(Box::from("key is expire"));
+        }
 
-        Ok(data.clone())
+        Ok(item.clone())
     }
 
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
@@ -61,11 +69,7 @@ impl AntDBHash {
         let item = match self.get_cache_item(&key) {
             Err(e) => return Err(e),
             Ok(data) => data,
-        };
-
-        if self.db.expire_delete(&key, &item) {
-            return Err(Box::from("key is expire"));
-        }
+        }; 
 
         let CacheType::Hash(hchild) = &item.value else {
             return Err(Box::from("value is not hashmap"));
@@ -94,11 +98,7 @@ impl AntDBHash {
         let item = match self.get_cache_item(&key) {
             Err(e) => return Err(e),
             Ok(data) => data,
-        };
-
-        if self.db.expire_delete(&key, &item) {
-            return Err(Box::from("key is expire"));
-        }
+        }; 
 
         let CacheType::Hash(child_hash) = &item.value else {
             return Err(Box::from("cacheitem is not hashmap"));
@@ -117,6 +117,11 @@ impl AntDBHash {
     }
 
     pub fn hlen(&self, key: &str) -> Result<i64, BoxError> {
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
+        };
+
         Ok(0)
     }
 }
