@@ -1,4 +1,4 @@
-use std::{sync::Arc };
+use std::sync::Arc;
 
 use crate::{
     BoxError,
@@ -35,8 +35,8 @@ impl AntDBHash {
             CacheType::String(_) => {
                 let hash_map = AntDBHashChild::new();
                 match hash_map.insert(field, value) {
-                    Ok(_)=>{},
-                    Err(e)=>{return Err(e)}
+                    Ok(_) => {}
+                    Err(e) => return Err(e),
                 };
                 entry.value = CacheType::Hash(hash_map);
             }
@@ -45,41 +45,52 @@ impl AntDBHash {
         Ok(())
     }
 
-    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {  
-        let data =  {
+    pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
+        let data = {
             let Ok(hmap_lock) = self.db.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
             let Some(data) = hmap_lock.get(&key) else {
                 return Err(Box::from("no key found"));
-            }; 
+            };
 
             data.clone()
-        }; 
+        };
 
         if self.db.expire_delete(key, &data) {
             return Err(Box::from("key is expire"));
-        }  
+        }
 
         let CacheType::Hash(hchild) = &data.value else {
             return Err(Box::from("value is not hashmap"));
         };
 
-        let Some(val) = hchild.get(&field) else{
+        let Some(val) = hchild.get(&field) else {
             return Err(Box::from("no field found"));
         };
 
         Ok(val)
     }
 
-    pub fn hdel(&self, key: String, field: Vec<String>) -> Result<u64, BoxError> {
-        let Ok(hmap_lock) = self.db.hash_map.write() else {
+    pub fn hdel(&self, key: String, fields: Vec<String>) -> Result<u64, BoxError> {
+        let Ok(hmap_lock) = self.db.hash_map.read() else {
             return Err(Box::from("error lock"));
         };
 
-        let mut total_deleted = 0;
+        let Some(child) = hmap_lock.get(&key) else {
+            return Err(Box::from("key not found"));
+        };
 
-        Ok(0)
+        let CacheType::Hash(child_hash) = &child.value else {
+            return Err(Box::from("cacheitem is not hashmap"));
+        };
+ 
+        match child_hash.del(fields) {
+            Ok(deleted)=>Ok(deleted),
+            Err(e)=>{
+                Err(e)
+            }
+        }
     }
 }

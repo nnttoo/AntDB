@@ -10,7 +10,7 @@ use tokio::{
 };
 use tokio_util::bytes::BytesMut;
 
-use crate::{app_ctx::AppCtxArc, utils_tools::BoxError};
+use crate::{app_ctx::AppCtxArc, server_tools::get_list_fields, utils_tools::BoxError};
 
 pub struct ServerAntDb {
     pub app_ctx: AppCtxArc,
@@ -294,25 +294,13 @@ impl ServerAntDb {
             Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }
-    } 
+    }
 
     pub fn resp_del(&self, values: Vec<Value>) -> Value {
         if values.is_empty() {
             return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
-        }
-
-        // add all
-        let mut keys = Vec::with_capacity(values.len());
-
-        // take all keys
-        for val_variant in values {
-            if let Value::Bulk(key) = val_variant {
-                keys.push(key);
-            } else {
-                return Value::Error("ERR syntax error or invalid argument type".to_string());
-            }
-        }
-
+        } 
+        let keys = get_list_fields(&values); 
         let db = &self.app_ctx.ant_db.db;
 
         // Oper Vec<String> langsung ke db.del yang baru

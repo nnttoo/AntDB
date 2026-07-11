@@ -36,4 +36,21 @@ impl AntDBHashChild {
 
         Some(val.clone())
     }
+
+    pub fn del(&self, fields : Vec<String>)->Result<u64,BoxError>{
+        let mut total_deleted = 0;
+
+        let Ok(mut hchild)=self.hashchild.write() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        for field in fields{
+            if hchild.remove(&field).is_some(){
+                total_deleted += 1;
+            }
+        }
+
+        Ok(total_deleted)
+
+    }
 }
