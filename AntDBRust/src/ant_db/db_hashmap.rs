@@ -15,6 +15,17 @@ impl AntDBHash {
     pub fn new(db: Arc<AntDB>) -> Arc<Self> {
         Arc::new(Self { db: db })
     }
+    fn get_cache_item(&self, key: &str) -> Result<CacheItem, BoxError> {
+        let Ok(hmap_lock) = self.db.hash_map.read() else {
+            return Err(Box::from("error lock"));
+        };
+
+        let Some(data) = hmap_lock.get(key) else {
+            return Err(Box::from("no key found"));
+        };
+
+        Ok(data.clone())
+    }
 
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.db.hash_map.write() else {
@@ -47,23 +58,16 @@ impl AntDBHash {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let data = {
-            let Ok(hmap_lock) = self.db.hash_map.read() else {
-                return Err(Box::from("error lock"));
-            };
-
-            let Some(data) = hmap_lock.get(&key) else {
-                return Err(Box::from("no key found"));
-            };
-
-            data.clone()
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
         };
 
-        if self.db.expire_delete(&key, &data) {
+        if self.db.expire_delete(&key, &item) {
             return Err(Box::from("key is expire"));
         }
 
-        let CacheType::Hash(hchild) = &data.value else {
+        let CacheType::Hash(hchild) = &item.value else {
             return Err(Box::from("value is not hashmap"));
         };
 
@@ -87,23 +91,16 @@ impl AntDBHash {
     }
 
     pub fn hdel(&self, key: String, fields: Vec<String>) -> Result<i64, BoxError> {
-        let child = {
-            let Ok(hmap_lock) = self.db.hash_map.read() else {
-                return Err(Box::from("error lock"));
-            };
-
-            let Some(child) = hmap_lock.get(&key) else {
-                return Ok(0);
-            };
-
-            child.clone()
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
         };
 
-        if self.db.expire_delete(&key, &child) {
+        if self.db.expire_delete(&key, &item) {
             return Err(Box::from("key is expire"));
         }
 
-        let CacheType::Hash(child_hash) = &child.value else {
+        let CacheType::Hash(child_hash) = &item.value else {
             return Err(Box::from("cacheitem is not hashmap"));
         };
 
@@ -117,5 +114,9 @@ impl AntDBHash {
         self.hdel_if_empty(&key, &child_hash);
 
         Ok(deleted)
+    }
+
+    pub fn hlen(&self, key: &str) -> Result<i64, BoxError> {
+        Ok(0)
     }
 }

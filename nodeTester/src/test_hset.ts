@@ -72,3 +72,64 @@ export async function testHdelMultiFields(redis: Redis) {
 
     console.log("✅ TEST HDEL MULTI FIELDS PASSED SUCCESSFULLY!");
 }
+
+export async function testHlen(redis: Redis) {
+    // Haryanto 11 July 2026
+    console.log("=== TEST HLEN ===");
+    const key = "testhash:hlen";
+    
+    // Generate unique field names using timestamp + random suffix
+    const timestamp = Date.now();
+    const field1 = `field1_${timestamp}`;
+    const field2 = `field2_${timestamp}`;
+    const field3 = `field3_${timestamp}`;
+    
+    const value1 = `val_${timestamp}`;
+    const value2 = `val_${timestamp + 1}`;
+    const value3 = `val_${timestamp + 2}`;
+
+    // 1. Clean up any existing keys to keep the test isolated
+    await redis.del(key);
+
+    // 2. Test HLEN on non-existing key (should return 0)
+    console.log("Checking HLEN on a non-existing key...");
+    const initialLen = await redis.hlen(key);
+    console.log("HLEN return value (expected 0):", initialLen);
+    if (initialLen !== 0) {
+        throw new Error(`Assertion Failed: HLEN on empty key should return 0, but got ${initialLen}`);
+    }
+
+    // 3. Insert fields and check HLEN incrementally
+    console.log("Adding fields to hash...");
+    await redis.hset(key, field1, value1);
+    await redis.hset(key, field2, value2);
+    await redis.hset(key, field3, value3);
+
+    const fullLen = await redis.hlen(key);
+    console.log("HLEN return value after adding 3 fields (expected 3):", fullLen);
+    if (fullLen !== 3) {
+        throw new Error(`Assertion Failed: HLEN should return 3, but got ${fullLen}`);
+    }
+
+    // 4. Delete one field and check if HLEN decreases to 2
+    console.log(`Deleting '${field1}' to verify HLEN update...`);
+    await redis.hdel(key, field1);
+
+    const afterOneDeleteLen = await redis.hlen(key);
+    console.log("HLEN return value after 1 deletion (expected 2):", afterOneDeleteLen);
+    if (afterOneDeleteLen !== 2) {
+        throw new Error(`Assertion Failed: HLEN should decrease to 2, but got ${afterOneDeleteLen}`);
+    }
+
+    // 5. Delete the remaining fields and check if HLEN returns to 0
+    console.log("Deleting remaining fields...");
+    await redis.hdel(key, field2, field3);
+
+    const finalLen = await redis.hlen(key);
+    console.log("HLEN return value after all deletions (expected 0):", finalLen);
+    if (finalLen !== 0) {
+        throw new Error(`Assertion Failed: HLEN should be 0 after deleting all fields, but got ${finalLen}`);
+    }
+
+    console.log("✅ TEST HLEN PASSED SUCCESSFULLY!");
+}

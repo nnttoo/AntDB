@@ -58,7 +58,7 @@ impl ServerAntDbRespHashMap {
             return Value::Error("ERR wrong number of arguments for 'hdel' command".to_string());
         }
 
-        let key_variant = values.remove(0); 
+        let key_variant = values.remove(0);
         let Value::Bulk(key) = key_variant else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
@@ -71,5 +71,11 @@ impl ServerAntDbRespHashMap {
             Ok(deleted) => Value::Integer(deleted),
             Err(e) => Value::Error(e.to_string()),
         }
+    }
+
+    pub fn hlen(&self, key: &str) -> Value {
+
+        
+        Value::Null
     }
 }
