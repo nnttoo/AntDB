@@ -10,15 +10,23 @@ use tokio::{
 };
 use tokio_util::bytes::BytesMut;
 
-use crate::{app_ctx::AppCtxArc, server_tools::get_list_fields, utils_tools::BoxError};
+use crate::{app_ctx::AppCtxArc, server_resp::ServerAntDbResp, utils_tools::BoxError};
 
 pub struct ServerAntDb {
     pub app_ctx: AppCtxArc,
+    pub resp: ServerAntDbResp,
 }
 
 pub type ServerAntDbArc = Arc<ServerAntDb>;
 
 impl ServerAntDb {
+    pub fn new(app_ctx: AppCtxArc) -> Self {
+        Self {
+            app_ctx: app_ctx.clone(),
+            resp: ServerAntDbResp::new(app_ctx),
+        }
+    }
+
     pub fn to_arc(self) -> ServerAntDbArc {
         Arc::new(self)
     }
@@ -81,18 +89,18 @@ impl ServerAntDb {
                                     "INFO" => Value::Bulk(
                                         "# Server\r\nAntDB_version:7.0.0\r\n".to_string(),
                                     ),
-                                    "PING" => self.resp_ping(values),
+                                    "PING" => self.resp.ping(values),
                                     "COMMAND" => Value::Array(vec![]),
-                                    "SET" => self.resp_set(values),
-                                    "SETEX" => self.resp_setex(values),
-                                    "EXPIRE" => self.resp_expire(values),
-                                    "GET" => self.resp_get(values),
+                                    "SET" => self.resp.set(values),
+                                    "SETEX" => self.resp.setex(values),
+                                    "EXPIRE" => self.resp.expire(values),
+                                    "GET" => self.resp.get(values),
                                     "HSET" => self.resp_hset(values),
                                     "HGET" => self.resp_hget(values),
-                                    "DEL" => self.resp_del(values),
-                                    "EXISTS" => self.resp_exists(values),
+                                    "DEL" => self.resp.del(values),
+                                    "EXISTS" => self.resp.exists(values),
 
-                                    "TTL" => self.resp_ttl(values),
+                                    "TTL" => self.resp.ttl(values),
                                     "PTTL" => self.resp_pttl(values),
                                     "PERSIST" => self.resp_persist(values),
                                     _ => {
@@ -131,60 +139,6 @@ impl ServerAntDb {
             }
         }
     }
-
-    fn resp_ping(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::String("PONG".to_string());
-        }
-
-        // Ambil argumen pertama
-        let arg = values.remove(0);
-
-        // Pastikan jika tipenya Bulk (dari redis-benchmark), kita kembalikan
-        // sebagai String atau Bulk yang bersih agar dibaca sebagai valid reply oleh benchmark.
-        match arg {
-            Value::Bulk(text) => Value::String(text), // Mengubah Bulk menjadi Simple String seringkali lebih aman untuk benchmark
-            Value::String(text) => Value::String(text),
-            _ => Value::String("PONG".to_string()),
-        }
-    }
-
-    fn resp_set(&self, mut values: Vec<Value>) -> Value {
-        if values.len() < 2 {
-            return Value::Error("ERR wrong number of arguments for 'set' command".to_string());
-        }
-        let key_variant = values.remove(0);
-        let val_variant = values.remove(0);
-
-        let (Value::Bulk(key), Value::Bulk(value)) = (key_variant, val_variant) else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db_string;
-
-        match db.set(key, value) {
-            Ok(()) => Value::String("OK".to_string()),
-            _ => Value::Null,
-        }
-    }
-
-    fn resp_get(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'get' command".to_string());
-        }
-        let key_variant = values.remove(0);
-        let Value::Bulk(key_bytes) = key_variant else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db_string;
-
-        match db.get(key_bytes) {
-            Ok(data) => Value::String(data),
-            Err(_) => Value::Null,
-        }
-    }
-
     fn resp_hget(&self, mut values: Vec<Value>) -> Value {
         if values.len() < 2 {
             return Value::Error("ERR wrong number of arguments for 'hget' command".to_string());
@@ -223,115 +177,6 @@ impl ServerAntDb {
         match db.hset(key, field, value) {
             Ok(_) => Value::String("OK".to_string()),
             Err(e) => Value::Error(e.to_string()),
-        }
-    }
-
-    fn resp_setex(&self, mut values: Vec<Value>) -> Value {
-        // 1. Validasi jumlah argumen (SETEX butuh 3 argumen: key, ttl, value)
-        if values.len() < 3 {
-            return Value::Error("ERR wrong number of arguments for 'setex' command".to_string());
-        }
-
-        let key_variant = values.remove(0);
-        let ttl_variant = values.remove(0);
-        let val_variant = values.remove(0);
-
-        let (Value::Bulk(key), Value::Bulk(ttl_bytes), Value::Bulk(value)) =
-            (key_variant, ttl_variant, val_variant)
-        else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let Ok(ttl) = ttl_bytes.parse::<u64>() else {
-            return Value::Error("error parse ttl".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db_string;
-
-        match db.setex(key, ttl, value) {
-            Ok(_) => Value::String("OK".to_string()),
-            Err(e) => Value::Error(e.to_string()),
-        }
-    }
-
-    pub fn resp_expire(&self, mut values: Vec<Value>) -> Value {
-        // 1. Validasi jumlah argumen
-        if values.len() < 2 {
-            return Value::Error("ERR wrong number of arguments for 'expire' command".to_string());
-        }
-
-        // 2. Ekstrak data secara konsisten menggunakan remove(0)
-        let key_variant = values.remove(0);
-        let ttl_variant = values.remove(0);
-
-        let (Value::Bulk(key), Value::Bulk(ttl_str)) = (key_variant, ttl_variant) else {
-            return Value::Error("parse error".to_string());
-        };
-
-        let Ok(ttl) = ttl_str.parse::<u64>() else {
-            return Value::Error("error parse ttl".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db;
-        match db.expire(key, ttl) {
-            Ok(_) => Value::String("OK".to_string()),
-            Err(_) => Value::Null,
-        }
-    }
-
-    pub fn resp_exists(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'exists' command".to_string());
-        }
-
-        let key_variant = values.remove(0);
-        let Value::Bulk(key) = key_variant else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db;
-        match db.exist(key) {
-            Ok(result) => Value::Integer(result),
-            Err(_) => Value::Integer(0),
-        }
-    }
-
-    pub fn resp_del(&self, values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
-        } 
-        let keys = get_list_fields(&values); 
-        let db = &self.app_ctx.ant_db.db;
-
-        // Oper Vec<String> langsung ke db.del yang baru
-        match db.del(keys) {
-            Ok(result) => Value::Integer(result),
-            Err(_) => Value::Integer(0),
-        }
-    }
-
-    pub fn resp_ttl(&self, mut values: Vec<Value>) -> Value {
-        if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
-        }
-        let key_variant = values.remove(0);
-        let Value::Bulk(key) = key_variant else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
-
-        let db = &self.app_ctx.ant_db.db;
-        match db.pttl(key) {
-            Ok(ms_result) => {
-                // return without convertion if -2 or -1
-                let final_ttl = if ms_result < 0 {
-                    ms_result
-                } else {
-                    // convert with roundup as redis standard
-                    (ms_result + 999) / 1000
-                };
-                Value::Integer(final_ttl)
-            }
-            Err(_) => Value::Integer(-2),
         }
     }
 

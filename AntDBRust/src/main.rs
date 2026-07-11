@@ -21,9 +21,6 @@ mod server_resp;
 async  fn main() {
     let appctx = AppCtx::get_appctx().await;
     
-    let server = ServerAntDb{
-        app_ctx : appctx,
-    }.to_arc();
-
+    let server = ServerAntDb::new(appctx).to_arc(); 
     _=server.start_server().await;
 }
