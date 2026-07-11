@@ -56,10 +56,18 @@ impl AntDBHashChild {
     }
 
     pub fn len(&self) -> Result<usize, BoxError> {
-        let Ok(mut hchild) = self.hashchild.read() else {
+        let Ok(hchild) = self.hashchild.read() else {
             return Err(Box::from("error lock hchild"));
         };
 
         Ok(hchild.len())
+    }
+
+    pub fn exist(&self, field: &str) -> Result<bool, BoxError> {
+        let Ok(hchild) = self.hashchild.read() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        Ok(hchild.contains_key(field))
     }
 }

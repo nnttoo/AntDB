@@ -136,4 +136,17 @@ impl AntDBHash {
             Err(_) => return Err(Box::from("error parse len".to_string())),
         }
     }
+
+    pub fn hexist(&self, key: &str, field: &str) -> Result<bool, BoxError> {
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
+        };
+
+        let CacheType::Hash(child_hash) = &item.value else {
+            return Err(Box::from("cacheitem is not hashmap"));
+        };
+
+        return child_hash.exist(field);
+    }
 }

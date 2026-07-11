@@ -89,4 +89,31 @@ impl ServerAntDbRespHashMap {
             Err(_) => Value::Integer(0),
         }
     }
+
+    pub fn hexist(&self, mut values: Vec<Value>) -> Value {
+        if values.len() < 2 {
+            return Value::Error("ERR Resp argument is empty".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let field_variant = values.remove(0);
+
+        let (Value::Bulk(key), Value::Bulk(field)) = (key_variant, field_variant) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_hash;
+        match db.hexist(&key, &field) {
+            Ok(exist) => {
+                if exist {
+                    return Value::Integer(1);
+                } else {
+                    return Value::Integer(0);
+                }
+            }
+            Err(_) => {
+                return Value::Integer(0);
+            }
+        }
+    }
 }

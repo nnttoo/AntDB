@@ -4,7 +4,7 @@ import * as net from 'net';
 import { sleep } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
-import { testHdelMultiFields, testHlen, testHset } from './test_hset';
+import { testHdelMultiFields, testHexists, testHlen, testHset } from './test_hset';
 import { testMultipleDel } from './test_del';
 
 //@ts-ignore
@@ -165,6 +165,10 @@ async function testServer(): Promise<void> {
     
     console.log("\n\n\n");
     await testHlen(redis);
+
+    
+    console.log("\n\n\n");
+    await testHexists(redis);
 
 
 

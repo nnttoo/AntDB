@@ -77,13 +77,13 @@ export async function testHlen(redis: Redis) {
     // Haryanto 11 July 2026
     console.log("=== TEST HLEN ===");
     const key = "testhash:hlen";
-    
+
     // Generate unique field names using timestamp + random suffix
     const timestamp = Date.now();
     const field1 = `field1_${timestamp}`;
     const field2 = `field2_${timestamp}`;
     const field3 = `field3_${timestamp}`;
-    
+
     const value1 = `val_${timestamp}`;
     const value2 = `val_${timestamp + 1}`;
     const value3 = `val_${timestamp + 2}`;
@@ -132,4 +132,55 @@ export async function testHlen(redis: Redis) {
     }
 
     console.log("✅ TEST HLEN PASSED SUCCESSFULLY!");
+}
+
+export async function testHexists(redis: Redis) {
+    // Haryanto 11 July 2026
+    console.log("=== TEST HEXISTS ===");
+    const key = "testhash:hexists";
+
+    // Generate unique field name using timestamp
+    const timestamp = Date.now();
+    const existingField = `field_exist_${timestamp}`;
+    const nonExistingField = `field_none_${timestamp}`;
+    const value = `val_${timestamp}`;
+
+    // 1. Clean up any existing keys to keep the test isolated
+    await redis.del(key);
+
+    // 2. Test HEXISTS on a non-existing key/field (should return 0)
+    console.log(`Checking HEXISTS on non-existing field '${nonExistingField}'...`);
+    const initialCheck = await redis.hexists(key, nonExistingField);
+    console.log("HEXISTS return value (expected 0):", initialCheck);
+
+    if (initialCheck !== 0) {
+        throw new Error(`Assertion Failed: HEXISTS should return 0 for non-existing field, but got ${initialCheck}`);
+    }
+
+    // 3. Setup field using HSET
+    console.log(`Setting field '${existingField}' with HSET...`);
+    await redis.hset(key, existingField, value);
+
+    // 4. Test HEXISTS on the field that now exists (should return 1)
+    console.log(`Checking HEXISTS on existing field '${existingField}'...`);
+    const fieldExistsCheck = await redis.hexists(key, existingField);
+    console.log("HEXISTS return value (expected 1):", fieldExistsCheck);
+
+    if (fieldExistsCheck !== 1) {
+        throw new Error(`Assertion Failed: HEXISTS should return 1 for an existing field, but got ${fieldExistsCheck}`);
+    }
+
+    // 5. Delete the field using HDEL and verify HEXISTS returns to 0
+    console.log(`Deleting field '${existingField}' using HDEL to test state change...`);
+    await redis.hdel(key, existingField);
+
+    console.log(`Re-checking HEXISTS on '${existingField}' after HDEL...`);
+    const afterDeleteCheck = await redis.hexists(key, existingField);
+    console.log("HEXISTS return value after HDEL (expected 0):", afterDeleteCheck);
+
+    if (afterDeleteCheck !== 0) {
+        throw new Error(`Assertion Failed: HEXISTS should return 0 after the field is deleted via HDEL, but got ${afterDeleteCheck}`);
+    }
+
+    console.log("✅ TEST HEXISTS PASSED SUCCESSFULLY!");
 }
