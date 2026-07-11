@@ -6,7 +6,7 @@ use std::{
 use resp::{Decoder, Value};
 use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
-    net::{TcpListener},
+    net::TcpListener,
 };
 use tokio_util::bytes::BytesMut;
 
@@ -36,7 +36,6 @@ impl ServerAntDb {
                 self_clone.child_open(socket).await;
             });
         }
- 
     }
 
     async fn child_open(self: ServerAntDbArc, mut socket: tokio::net::TcpStream) {
@@ -163,7 +162,6 @@ impl ServerAntDb {
 
         let db = &self.app_ctx.ant_db.db;
 
-
         match db.set(key, value) {
             Ok(()) => Value::String("OK".to_string()),
             _ => Value::Null,
@@ -248,9 +246,7 @@ impl ServerAntDb {
             return Value::Error("error parse ttl".to_string());
         };
 
-
         let db = &self.app_ctx.ant_db.db;
-
 
         match db.setex(key, ttl, value) {
             Ok(_) => Value::String("OK".to_string()),
@@ -298,20 +294,29 @@ impl ServerAntDb {
             Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }
-    }
+    } 
 
-    pub fn resp_del(&self, mut values: Vec<Value>) -> Value {
+    pub fn resp_del(&self, values: Vec<Value>) -> Value {
         if values.is_empty() {
             return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
         }
 
-        let key_variant = values.remove(0);
-        let Value::Bulk(key) = key_variant else {
-            return Value::Error("ERR syntax error or invalid argument type".to_string());
-        };
+        // add all
+        let mut keys = Vec::with_capacity(values.len());
+
+        // take all keys
+        for val_variant in values {
+            if let Value::Bulk(key) = val_variant {
+                keys.push(key);
+            } else {
+                return Value::Error("ERR syntax error or invalid argument type".to_string());
+            }
+        }
 
         let db = &self.app_ctx.ant_db.db;
-        match db.del(key) {
+
+        // Oper Vec<String> langsung ke db.del yang baru
+        match db.del(keys) {
             Ok(result) => Value::Integer(result),
             Err(_) => Value::Integer(0),
         }

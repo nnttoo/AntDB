@@ -1,8 +1,10 @@
 use std::{
-    collections::HashMap, sync::{Arc, RwLock}, time::{Duration, Instant},
+    collections::HashMap,
+    sync::{Arc, RwLock},
+    time::{Duration, Instant},
 };
 
-use crate::{BoxError};
+use crate::BoxError;
 #[derive(Clone)]
 pub enum CacheType {
     String(String),
@@ -30,16 +32,15 @@ impl CacheItem {
 
 pub type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
 pub struct AntDB {
-    pub hash_map: HashDB, 
+    pub hash_map: HashDB,
 }
- 
 
 impl AntDB {
     pub fn create_arc() -> Arc<Self> {
         Arc::new(AntDB {
             hash_map: Arc::new(RwLock::new(HashMap::new())),
         })
-    } 
+    }
     pub fn set(&self, key: String, val: String) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error locck"));
@@ -121,7 +122,7 @@ impl AntDB {
 
         hmap_lock.remove(&key);
         true
-    }  
+    }
 
     pub fn exist(&self, key: String) -> Result<i64, BoxError> {
         let Ok(hmap_lock) = self.hash_map.read() else {
@@ -139,16 +140,21 @@ impl AntDB {
         Ok(1)
     }
 
-    pub fn del(&self, key: String) -> Result<i64, BoxError> {
+    pub fn del(&self, keys: Vec<String>) -> Result<i64, BoxError> { 
         let Ok(mut hmap_lock) = self.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
 
-        if hmap_lock.remove(&key).is_some() {
-            Ok(1)
-        } else {
-            Ok(0)
+        let mut total_deleted = 0;
+
+        // Looping 
+        for key in keys {
+            if hmap_lock.remove(&key).is_some() {
+                total_deleted += 1;
+            }
         }
+
+        Ok(total_deleted)
     }
 
     pub fn pttl(&self, key: String) -> Result<i64, BoxError> {

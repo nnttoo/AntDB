@@ -5,6 +5,7 @@ import { sleep } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
 import { testHdelMultiFields, testHset } from './test_hset';
+import { testMultipleDel } from './test_del';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -102,26 +103,12 @@ async function testServer(): Promise<void> {
         console.log("✅ TEST SET PASSED SUCCESSFULLY!");
     }
 
-    
 
-    async function testDel() {
-        console.log("=== TEST DEL ===");
-        const key = "testhash";
 
-        console.log('Deleting key with DEL...');
-        const deletedCount = await redis.del(key);
-        console.log('DEL result:', deletedCount);
-
-        if (deletedCount !== 1) {
-            throw new Error(`Assertion Failed: DEL should remove 1 key, but returned '${deletedCount}'`);
-        }
-
-        console.log("✅ TEST DEL PASSED SUCCESSFULLY!");
-    }
 
     async function testExists() {
         console.log("=== TEST EXISTS ===");
-        const key = "testhash";
+        const key = "testtestexistskeys";
 
         const existsCount = await redis.exists(key);
         console.log('EXISTS result:', existsCount);
@@ -164,7 +151,9 @@ async function testServer(): Promise<void> {
     console.log('\n-----------------------------------\n');
     await testHset(redis);
     console.log('\n-----------------------------------\n');
-    await testDel();
+
+    await testMultipleDel(redis);
+    console.log('\n-----------------------------------\n');
     console.log('\n-----------------------------------\n');
     await testExists();
 
@@ -173,10 +162,22 @@ async function testServer(): Promise<void> {
     console.log("\n\n\n");
     await testHdelMultiFields(redis);
     console.log("\n\n\n");
-    
-    console.log('\nTESTING DONE, REDIST DISCONNECT\n'); 
-    redis.disconnect();
+
+    console.log('\nTESTING DONE, REDIST DISCONNECT\n');
 
 }
 
-testServer();
+async function testSafe() {
+
+    try {
+
+       await testServer();
+    } catch (error) {
+        console.log(error);
+    }
+
+    
+    redis.disconnect();
+}
+
+testSafe();
