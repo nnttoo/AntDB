@@ -150,9 +150,7 @@ impl AntDBHash {
         return child_hash.exist(field);
     }
 
-    
     pub fn hmget(&self, key: &str, fields: Vec<String>) -> Result<Vec<Option<String>>, BoxError> {
-
         let item = match self.get_cache_item(&key) {
             Err(e) => return Err(e),
             Ok(data) => data,
@@ -162,8 +160,18 @@ impl AntDBHash {
             return Err(Box::from("cacheitem is not hashmap"));
         };
 
-        return child_hash.hmget(fields)
+        return child_hash.hmget(fields);
     }
 
-    
+    pub fn hkeys(&self, key: &str) -> Result<Vec<String>, BoxError> {
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
+        };
+
+        let CacheType::Hash(child_hash) = &item.value else {
+            return Err(Box::from("cacheitem is not hashmap"));
+        };
+        return child_hash.hkeys();
+    }
 }

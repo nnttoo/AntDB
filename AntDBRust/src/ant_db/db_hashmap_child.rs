@@ -85,4 +85,13 @@ impl AntDBHashChild {
 
         Ok(result)
     }
+
+    pub fn hkeys(&self)->Result<Vec<String>, BoxError>{
+         let Ok(hchild) = self.hashchild.read() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        let keys : Vec<String> = hchild.keys().cloned().collect(); 
+        Ok(keys)
+    }
 }
