@@ -7,6 +7,7 @@ import { testHdelMultiFields, testHexists, testHlen, testHset } from './test_hse
 import { testMultipleDel } from './test_del';
 import { testHmget } from './test_hmget';
 import { sendRawPing, testExists, testSet, testSetex } from './test_simple';
+import { testHkeys } from './test_hkeys';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -37,6 +38,7 @@ async function testSafe() {
         testHlen(redis),
         testHexists(redis),
         testHmget(redis),
+        testHkeys(redis),
 
     ];
 

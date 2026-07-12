@@ -55,6 +55,35 @@ impl ServerAntDb {
 
     // Haryanto 11 July 2026
 
+    fn create_response(&self, command_name: &str, mut values: Vec<Value>) -> Value {
+        match command_name {
+            "CLIENT" => Value::String("OK".to_string()),
+            "INFO" => Value::Bulk("# Server\r\nAntDB_version:7.0.0\r\n".to_string()),
+            "PING" => self.resp.ping(values),
+            "COMMAND" => Value::Array(vec![]),
+            "SET" => self.resp.set(values),
+            "SETEX" => self.resp.setex(values),
+            "EXPIRE" => self.resp.expire(values),
+            "GET" => self.resp.get(values),
+            "HSET" => self.resp_hashmap.hset(values),
+            "HGET" => self.resp_hashmap.hget(values),
+            "HDEL" => self.resp_hashmap.hdel(values),
+            "HLEN" => self.resp_hashmap.hlen(values),
+            "HEXISTS" => self.resp_hashmap.hexist(values),
+            "HMGET" => self.resp_hashmap.hmget(values),
+            "DEL" => self.resp.del(values),
+            "EXISTS" => self.resp.exists(values),
+            "TTL" => self.resp.ttl(values),
+            "PTTL" => self.resp.pttl(values),
+            "PERSIST" => self.resp.persist(values),
+            _ => {
+                println!("command unhandled : {}", command_name);
+                let err_msg = format!("ERR unknown command '{}'", command_name);
+                Value::Error(err_msg)
+            }
+        }
+    }
+
     async fn child_open(self: ServerAntDbArc, mut socket: tokio::net::TcpStream) {
         let mut buf = BytesMut::with_capacity(65536);
         loop {
@@ -83,43 +112,12 @@ impl ServerAntDb {
                                     continue;
                                 }
 
-                                // Tetap bisa pakai Value::Bulk bawaanmu!
                                 let Value::Bulk(cmd_bytes) = values.remove(0) else {
                                     continue;
                                 };
                                 let command_name = cmd_bytes.to_uppercase();
 
-                                let val_response = match command_name.as_str() {
-                                    "CLIENT" => Value::String("OK".to_string()),
-                                    "INFO" => Value::Bulk(
-                                        "# Server\r\nAntDB_version:7.0.0\r\n".to_string(),
-                                    ),
-                                    "PING" => self.resp.ping(values),
-                                    "COMMAND" => Value::Array(vec![]),
-                                    "SET" => self.resp.set(values),
-                                    "SETEX" => self.resp.setex(values),
-                                    "EXPIRE" => self.resp.expire(values),
-                                    "GET" => self.resp.get(values),
-                                    "HSET" => self.resp_hashmap.hset(values),
-                                    "HGET" => self.resp_hashmap.hget(values),
-                                    "HDEL" => self.resp_hashmap.hdel(values),
-                                    "HLEN" => self.resp_hashmap.hlen(values),
-                                    "HEXISTS" => self.resp_hashmap.hexist(values),
-                                    "HMGET" => self.resp_hashmap.hmget(values),
-                                    "DEL" => self.resp.del(values),
-                                    "EXISTS" => self.resp.exists(values),
-                                    "TTL" => self.resp.ttl(values),
-                                    "PTTL" => self.resp.pttl(values),
-                                    "PERSIST" => self.resp.persist(values),
-                                    _ => {
-                                        println!("command unhandled : {}", command_name);
-                                        let err_msg =
-                                            format!("ERR unknown command '{}'", command_name);
-                                        Value::Error(err_msg)
-                                    }
-                                };
-
-                                // Metode .encode() kustom buatan kita langsung jalan lancar di sini!
+                                let val_response = self.create_response(&command_name, values);
                                 _ = socket.write_all(&val_response.encode()).await;
                             }
                             _ => {
@@ -128,7 +126,7 @@ impl ServerAntDb {
                             }
                         }
                     }
-                    Err(e) => { 
+                    Err(e) => {
                         if e.kind() == std::io::ErrorKind::UnexpectedEof {
                             break;
                         }
