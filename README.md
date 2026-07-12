@@ -35,7 +35,7 @@ curl -sSO https://raw.githubusercontent.com/nnttoo/AntDB/main/install.sh && chmo
 ## Auto Install Windows (GitBash)
 
 ```sh
-rm -f install_windows_gitbash.sh antdb-server.exe && curl -sSO https://raw.githubusercontent.com/nnttoo/AntDB/main/install_windows_gitbash.sh && chmod +x install_windows_gitbash.sh && ./install_windows_gitbash.sh
+curl -sSO https://raw.githubusercontent.com/nnttoo/AntDB/main/install_windows_gitbash.sh && chmod +x install_windows_gitbash.sh && ./install_windows_gitbash.sh
 ```
 
 ### Download Binary Manually
