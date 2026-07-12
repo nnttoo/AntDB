@@ -10,7 +10,8 @@
     "cargo_run" : "cargo run",
     "sleep_and_test" : "node -e \"setTimeout(() => {}, 4000)\" && npm run run_test_node",
     "run" : "concurrently -n  AntDb,Test npm:cargo_run npm:sleep_and_test",
-    "benchmark" : "cd ../redisBenchMark/ && npm run run_all"
+    "benchmark" : "cd ../redisBenchMark/ && npm run run_all",
+    "benchmark_only" : "cd ../redisBenchMark/ && npm run run_bmark"
   },
   "author": "",
   "license": "ISC",

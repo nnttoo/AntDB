@@ -24,3 +24,4 @@ cp /build/release/AntDB /working_dir/AntDB
 #cp /build/x86_64-unknown-linux-musl/release/AntDB /working_dir/AntDB
 
 echo '--- Selesai! File binary siap digunakan ---'
+exit 0

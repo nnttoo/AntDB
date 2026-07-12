@@ -13,7 +13,7 @@ services:
         WORKDIR /build
         ENTRYPOINT []
         # Gunakan CMD shell form untuk memperbaiki file dan mengeksekusinya
-        CMD dos2unix /docker_entry/entrypoint_build.sh && sh /docker_entry/entrypoint_build.sh
+        CMD dos2unix /docker_entry/entrypoint_build.sh && exec sh /docker_entry/entrypoint_build.sh
     volumes:
       # Mount source code untuk dibaca oleh command
       - ../AntDBRust:/app_source

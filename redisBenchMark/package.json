@@ -3,17 +3,27 @@
   "version": "1.0.0",
   "description": "## Step-by-step",
   "main": "index.js",
-  "scripts": { 
+  "scripts": {
     "compile_compose": "docker compose -f docker-compose-build.yml",
     "compile_build": "npm run compile_compose -- build",
-    "compile_up": "npm run compile_compose -- up --remove-orphans --force-recreate",
-   
+    "compile_up": "npm run compile_compose -- run --rm builder",
+
     "bmark_compose": "docker compose -f docker-compose-run.yml",
     "bmark_build": "npm run bmark_compose -- build",
-    "bmark_up": "npm run bmark_compose -- up --remove-orphans --force-recreate",
+    "bmark_up": "npm run bmark_compose -- run --rm antdb-all-in-one",
 
-    "run_all" : "npm run compile_up && npm run bmark_up"
+    "create_bresult" :"tsx ./srcNode/read_csv.ts",
+    "run_bmark" : "npm run bmark_up && npm run create_bresult",
+    "run_all": "npm run compile_up && npm run run_bmark"
+
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "tsx": "^4.23.0",
+    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1"
+  }
 }
