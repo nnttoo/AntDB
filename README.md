@@ -81,7 +81,7 @@ antdb-server.exe
   - ✅ HEXISTS
   - ✅ HMGET
   - ✅ HKEYS
-  - ⏳ HVALS
+  - ✅ HVALS
   - ⏳ HGETALL
 - Advanced String Commands
   - ⏳ MSET
