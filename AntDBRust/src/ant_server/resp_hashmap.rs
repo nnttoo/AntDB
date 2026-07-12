@@ -1,4 +1,3 @@
- 
 use super::tools::get_list_fields;
 use crate::{ant_resp::value::Value, app_ctx::AppCtxArc};
 
@@ -87,8 +86,6 @@ impl ServerAntDbRespHashMap {
             Ok(len) => Value::Integer(len),
             Err(_) => Value::Integer(0),
         }
-
-        
     }
 
     pub fn hexist(&self, mut values: Vec<Value>) -> Value {
@@ -116,5 +113,39 @@ impl ServerAntDbRespHashMap {
                 return Value::Integer(0);
             }
         }
+    }
+    pub fn hmget(&self, mut values: Vec<Value>) -> Value {
+        if values.len() < 2 {
+            return Value::Error("ERR wrong number of arguments for 'hdel' command".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let fields = get_list_fields(&values);
+        let field_len = fields.len();
+
+        let mut val_arr: Vec<Value> = Vec::with_capacity(field_len); 
+        let db = &self.app_ctx.ant_db.db_hash;
+        match db.hmget(&key, fields) {
+            Ok(hmget_result) => {
+                for f in hmget_result {
+                    let value = match f {
+                        Some(val) => Value::String(val),
+                        None => Value::Null,
+                    };
+                    val_arr.push(value);
+                }
+            }
+            Err(_) => {
+                for _ in 0..field_len{
+                    val_arr.push(Value::Null);
+                }
+            }
+        };
+
+        Value::Array(val_arr)
     }
 }

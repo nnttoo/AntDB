@@ -6,7 +6,7 @@ export function sleep(n: number) {
 
 export interface  TestMethod {
     name : string;
-    success : boolean;  
+    success? : boolean;  
     errror? : string;
     onTest() : Promise<any>;
 }

@@ -70,4 +70,19 @@ impl AntDBHashChild {
 
         Ok(hchild.contains_key(field))
     }
+
+    pub fn hmget(&self, fields: Vec<String>) -> Result<Vec<Option<String>>, BoxError> {
+        let mut result: Vec<Option<String>> = Vec::with_capacity(fields.len());
+
+        let Ok(hchild) = self.hashchild.read() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        for field in fields {
+            let val = hchild.get(&field).cloned();
+            result.push(val);
+        }
+
+        Ok(result)
+    }
 }

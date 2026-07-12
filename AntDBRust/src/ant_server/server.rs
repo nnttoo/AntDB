@@ -105,6 +105,7 @@ impl ServerAntDb {
                                     "HDEL" => self.resp_hashmap.hdel(values),
                                     "HLEN" => self.resp_hashmap.hlen(values),
                                     "HEXISTS" => self.resp_hashmap.hexist(values),
+                                    "HMGET" => self.resp_hashmap.hmget(values),
                                     "DEL" => self.resp.del(values),
                                     "EXISTS" => self.resp.exists(values),
                                     "TTL" => self.resp.ttl(values),
