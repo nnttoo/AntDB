@@ -121,9 +121,9 @@ jobs:
         run: |
           mkdir -p staging_release
           if [ "${{ matrix.job.os }}" = "windows-latest" ]; then
-            mv target/${{ matrix.job.target }}/release/antdb-server.exe staging_release/${{ matrix.job.out_name }}
+            mv target/${{ matrix.job.target }}/release/AntDB.exe staging_release/${{ matrix.job.out_name }}
           else
-            mv target/${{ matrix.job.target }}/release/antdb-server staging_release/${{ matrix.job.out_name }}
+            mv target/${{ matrix.job.target }}/release/AntDB staging_release/${{ matrix.job.out_name }}
           fi
 
       - name: Upload Artifacts
