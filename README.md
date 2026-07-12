@@ -26,7 +26,13 @@ AntDB is built from the ground up using Rust to be **truly cross-platform**. We 
 
 ## Installation & Setup
 
-### Download Binary
+## Auto Install
+
+```sh
+curl -sSO https://raw.githubusercontent.com/nnttoo/AntDB/main/install.sh && chmod +x install.sh && ./install.sh
+```
+
+### Download Binary Manually
 
 You don't need to install the Rust toolchain to use AntDB. Pre-compiled binaries for all supported platforms are automatically built via GitHub Actions.
 
