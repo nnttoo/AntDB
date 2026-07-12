@@ -3,3 +3,11 @@ export function sleep(n: number) {
         setTimeout(r, n);
     })
 }
+
+export interface  TestMethod {
+    name : string;
+    success : boolean;  
+    errror? : string;
+    onTest() : Promise<any>;
+}
+ 

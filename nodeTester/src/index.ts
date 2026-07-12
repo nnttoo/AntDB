@@ -1,11 +1,12 @@
 // Haryanto 14 Juni 2026
 import Redis from 'ioredis';
-import * as net from 'net';
-import { sleep } from './sleep';
+import { sleep, TestMethod } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
 import { testHdelMultiFields, testHexists, testHlen, testHset } from './test_hset';
 import { testMultipleDel } from './test_del';
+import { testHmget } from './test_hmget';
+import { sendRawPing, testExists, testSet, testSetex } from './test_simple';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -18,175 +19,61 @@ const redis: Redis = new Redis({
     host: redisHost,
     port: redisPort,
 });
-
-
-
-async function sendRawPing() {
-    let port = redisPort;
-    let host = redisHost;
-    let response = await new Promise((resolve, reject) => {
-        const client: net.Socket = net.createConnection({ port, host }, () => {
-            // Send exactly "PING\r\n" as raw text bytes
-            client.write("PING\r\n");
-        });
-
-        client.on('data', (data: Buffer) => {
-            resolve(data.toString());
-            client.end(); // Clean up connection
-        });
-
-        client.on('error', (err: Error) => {
-            reject(err);
-        });
-    });
-
-    console.log(response + ":---");
-
-    if (response == "+PONG\r\n") {
-        console.log("✅ TEST sendRawPing PASSED SUCCESSFULLY!");
-    } else {
-        console.log(`Assertion Failed: sendRawPing`);
-    }
-}
-
-async function testServer(): Promise<void> {
-    async function testSetex() {
-        console.log("=== TEST SETEX ===");
-        const key = "testkey";
-
-        // 1. Simpan token dengan TTL 3 detik
-        console.log('Storing token with a 3-second TTL...');
-        await redis.setex(key, 3, 'XYZ123');
-
-        // 2. Ambil langsung (harus ada nilainya: 'XYZ123')
-        const tokenImmediate: string | null = await redis.get(key);
-        console.log('Immediate token check:', tokenImmediate);
-
-        // Validasi pengecekan langsung
-        if (tokenImmediate !== 'XYZ123') {
-            throw new Error(`Assertion Failed: Immediate token should be 'XYZ123', but got '${tokenImmediate}'`);
-        }
-
-        // 3. Tunggu selama 4 detik sampai data kedaluwarsa
-        console.log('Waiting for 4 seconds...');
-        await sleep(4000);
-
-        // 4. Ambil setelah menunggu (harusnya sudah terhapus: null)
-        const tokenAfterWait: string | null = await redis.get(key);
-        console.log('Token after 4 seconds:', tokenAfterWait);
-
-        // Validasi pengecekan setelah kedaluwarsa
-        if (tokenAfterWait !== null) {
-            throw new Error(`Assertion Failed: Token should be expired and return null, but instead found: '${tokenAfterWait}'`);
-        }
-
-        console.log("✅ TEST SETEX PASSED SUCCESSFULLY!");
-    }
-
-
-
-    async function testSet() {
-        console.log("=== TEST SET ===");
-        const key = "testkey_set";
-        const value = "Hello AntDb";
-
-        console.log('Storing value with SET...');
-        await redis.set(key, value);
-
-        const storedValue: string | null = await redis.get(key);
-        console.log('Stored value check:', storedValue);
-
-        if (storedValue !== value) {
-            throw new Error(`Assertion Failed: SET should store '${value}', but got '${storedValue}'`);
-        }
-
-        console.log("✅ TEST SET PASSED SUCCESSFULLY!");
-    }
-
-
-
-
-    async function testExists() {
-        console.log("=== TEST EXISTS ===");
-        const key = "testtestexistskeys";
-
-        const existsCount = await redis.exists(key);
-        console.log('EXISTS result:', existsCount);
-
-        if (existsCount !== 0) {
-            throw new Error(`Assertion Failed: EXISTS should return 0 after DEL, but got '${existsCount}'`);
-        }
-
-        console.log("✅ TEST EXISTS PASSED SUCCESSFULLY!");
-    }
-
-    console.log('--- Starting AntDb Replica Tests ---\n');
-
-    // 1. Test PING commands (Standard and with arguments)
-    console.log('Testing PING without arguments...');
-    const pingStandard = await redis.ping();
-    console.log('PING result:', pingStandard); // Output yang diharapkan: PONG
-
-    console.log('Testing PING with custom message...');
-    // Catatan: ioredis mengirim argumen ping lewat pemanggilan method langsung atau .call()
-    const pingWithArg = await redis.call('PING', 'Hello AntDb');
-    console.log('PING with argument result:', pingWithArg); // Output yang diharapkan: Hello AntDb
-
-    console.log('\n-----------------------------------\n');
-
-
-    console.log("Testing raw ping--------------------------")
-    await sendRawPing();
-    console.log('\n-----------------------------------\n');
-
-
-    await testSet();
-    console.log('\n-----------------------------------\n');
-    await testSetex();
-    console.log('\n-----------------------------------\n');
-
-
-    await testExpire(redis);
-
-    console.log('\n-----------------------------------\n');
-    await testHset(redis);
-    console.log('\n-----------------------------------\n');
-
-    await testMultipleDel(redis);
-    console.log('\n-----------------------------------\n');
-    console.log('\n-----------------------------------\n');
-    await testExists();
-
-    await testPersist(redis);
-
-    console.log("\n\n\n");
-    await testHdelMultiFields(redis);
-    
-    
-    console.log("\n\n\n");
-    await testHlen(redis);
-
-    
-    console.log("\n\n\n");
-    await testHexists(redis);
-
-
-
-    console.log('\nTESTING DONE, REDIST DISCONNECT\n');
-
-}
-
 async function testSafe() {
 
-    try {
+    let tabResult: TestMethod[] = [
+        sendRawPing({
+            port: redisPort,
+            host: redisHost
+        }),
+        testSet(redis),
+        testSetex(redis),
+        testExpire(redis),
+        testHset(redis),
+        testMultipleDel(redis),
+        testExists(redis),
+        testPersist(redis),
+        testHdelMultiFields(redis),
+        testHlen(redis),
+        testHexists(redis),
+        testHmget(redis),
 
-       await testServer();
-    } catch (error) {
-        console.log(error);
+    ];
+
+    for (let item of tabResult) {
+        item.success = false;
+        try {
+
+            console.log("\n\n\n");
+            await item.onTest();
+            item.success = true;
+
+        } catch (error) {
+            console.log(error);
+            item.errror = error + "";
+        }
+
+
+        console.log('\nTESTING DONE, REDIST DISCONNECT\n');
     }
 
-    
+
+
     redis.disconnect();
+
+    (() => {
+        let tb = tabResult.map((e) => {
+             
+            return {
+                name : e.name.toUpperCase().padEnd(20," "),
+                success : e.success,
+                error : e.errror?? null,
+            }
+        });
+        console.table(tb);
+    })();
+
+
 }
 
 testSafe();
