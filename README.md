@@ -79,7 +79,7 @@ antdb-server.exe
   - ✅ HDEL
   - ✅ HLEN
   - ✅ HEXISTS
-  - ⏳ HMGET
+  - ✅ HMGET
   - ⏳ HKEYS
   - ⏳ HVALS
   - ⏳ HGETALL
