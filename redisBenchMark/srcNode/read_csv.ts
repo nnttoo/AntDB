@@ -53,11 +53,10 @@ function convertCsvToMarkdown(csvFilePath: string, mdFilePath: string): void {
         });
 
         let date = new Date();
-        let content = `## Benchmark Result : \n\n 
-        \nDate : ${date.toLocaleDateString() }  - ${date.toLocaleTimeString()}
+        let content = `\n\n\n## Benchmark Result : ${date.toLocaleDateString() } - ${date.toLocaleTimeString()}
         \n\n${markdown}`
 
-        fs.writeFileSync(mdFilePath, content, 'utf-8');
+        fs.appendFileSync(mdFilePath, content, 'utf-8');
         console.log(`Successfully generated Markdown table at: ${mdFilePath}`);
 
     } catch (error) {
