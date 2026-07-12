@@ -1,0 +1,178 @@
+# // Haryanto 12 July 2026
+# .github/workflows/build.yml
+
+name: Cross-Compile Build & Publish
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  workflow_dispatch:
+    inputs:
+      custom_version:
+        description: 'Target Version (e.g. v1.0.1) - Leave blank for auto timestamp'
+        required: false
+        default: ''
+      platform_filter:
+        description: 'Select Platform to Build'
+        required: true
+        default: 'ALL'
+        type: choice
+        options:
+          - 'ALL'
+          - 'Win32'
+          - 'Win64'
+          - 'Linux32'
+          - 'Linux64'
+          - 'LinuxArm32'
+          - 'LinuxArm64'
+          - 'Mac64'
+          - 'MacArm64'
+
+jobs:
+  build:
+    name: Build for ${{ matrix.job.platform_name }}
+    runs-on: ${{ matrix.job.os }}
+    if: |
+      contains(github.event.head_commit.message, '[build ') || 
+      contains(github.event.head_commit.message, '[Build ') || 
+      github.event_name == 'workflow_dispatch'
+    
+    defaults:
+      run:
+        working-directory: ./AntDBRust
+
+    strategy:
+      fail-fast: false
+      matrix:
+        job:
+          # --- WINDOWS TARGETS ---
+          - os: windows-latest
+            target: i686-pc-windows-msvc
+            platform_name: Win32
+            out_name: antdb-server_Win32.exe
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            platform_name: Win64
+            out_name: antdb-server_Win64.exe
+
+          # --- LINUX TARGETS ---
+          - os: ubuntu-latest
+            target: i686-unknown-linux-gnu
+            platform_name: Linux32
+            out_name: antdb-server_Linux32
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            platform_name: Linux64
+            out_name: antdb-server_Linux64
+          - os: ubuntu-latest
+            target: armv7-unknown-linux-gnueabihf
+            platform_name: LinuxArm32
+            out_name: antdb-server_LinuxArm32
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            platform_name: LinuxArm64
+            out_name: antdb-server_LinuxArm64
+
+          # --- MACOS TARGETS ---
+          - os: macos-latest
+            target: x86_64-apple-darwin
+            platform_name: Mac64
+            out_name: antdb-server_Mac64
+          - os: macos-latest
+            target: aarch64-apple-darwin
+            platform_name: MacArm64
+            out_name: antdb-server_MacArm64
+
+    steps:
+      - name: Checkout repository
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.job.target }}
+
+      - name: Install Linux Cross-Compilation Linkers
+        if: (github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name) && contains(matrix.job.os, 'ubuntu')
+        run: |
+          sudo apt-get update
+          if [ "${{ matrix.job.platform_name }}" = "Linux32" ]; then
+            sudo apt-get install -y gcc-multilib
+          elif [ "${{ matrix.job.platform_name }}" = "LinuxArm32" ]; then
+            sudo apt-get install -y gcc-arm-linux-gnueabihf
+          elif [ "${{ matrix.job.platform_name }}" = "LinuxArm64" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
+
+      - name: Cargo Build (Release)
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name
+        env:
+          PKG_CONFIG_ALLOW_CROSS: "1"
+          CARGO_TARGET_I686_UNKNOWN_LINUX_GNU_LINKER: gcc
+          CARGO_TARGET_ARMV7_UNKNOWN_LINUX_GNUEABIHF_LINKER: arm-linux-gnueabihf-gcc
+          CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER: aarch64-linux-gnu-gcc
+        run: cargo build --target ${{ matrix.job.target }} --release
+
+      - name: Rename Executable
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name
+        shell: bash
+        run: |
+          mkdir -p staging_release
+          if [ "${{ matrix.job.os }}" = "windows-latest" ]; then
+            mv target/${{ matrix.job.target }}/release/antdb-server.exe staging_release/${{ matrix.job.out_name }}
+          else
+            mv target/${{ matrix.job.target }}/release/antdb-server staging_release/${{ matrix.job.out_name }}
+          fi
+
+      - name: Upload Artifacts
+        if: github.event_name != 'workflow_dispatch' || github.event.inputs.platform_filter == 'ALL' || github.event.inputs.platform_filter == matrix.job.platform_name
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.job.platform_name }}_Release
+          path: AntDBRust/staging_release/${{ matrix.job.out_name }}
+
+  publish_release:
+    name: Create & Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: ./downloaded_artifacts
+          merge-multiple: true
+
+      - name: Extract Version From Commit Message or Input
+        id: get_version
+        run: |
+          INPUT_VERSION="${{ github.event.inputs.custom_version }}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          if [ ! -z "$INPUT_VERSION" ]; then
+            VERSION="$INPUT_VERSION"
+          elif [[ "$COMMIT_MSG" =~ \[[bB]uild[[:space:]]+([^\]]+)\] ]]; then
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            VERSION="v$(date +'%Y.%m.%d-%H%M')"
+          fi
+          VERSION=$(echo "$VERSION" | xargs)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted Version: $VERSION"
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.get_version.outputs.version }}
+          name: Release ${{ steps.get_version.outputs.version }}
+          body: |
+            Automated cross-compile build for AntDB.
+            Commit message: ${{ github.event.head_commit.message }}
+          draft: false
+          prerelease: false
+          files: ./downloaded_artifacts/*
