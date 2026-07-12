@@ -173,4 +173,29 @@ impl ServerAntDbRespHashMap {
 
         Value::Array(val_arr) 
     }
+
+    pub fn hvals(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'hdel' command".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let mut val_arr: Vec<Value> = Vec::new(); 
+
+        let db = &self.app_ctx.ant_db.db_hash; 
+        let Ok(hkeys) = db.hvals(&key) else { 
+            return Value::Array(val_arr);
+        };
+
+         
+        for f in hkeys {
+            val_arr.push(Value::String(f));
+        }
+
+        Value::Array(val_arr) 
+    }
 }

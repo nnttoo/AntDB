@@ -13,7 +13,7 @@ export function testHvals(redis: Redis): TestMethod {
             const timestamp = Date.now();
 
             const field1 = "name";
-            const value1 = `Anto_${timestamp}`;
+            const value1 = `Anto_${timestamp}`; // Contoh: "Anto_176..."
             const field2 = "role";
             const value2 = "Core_Developer";
             const field3 = "status";
@@ -45,17 +45,20 @@ export function testHvals(redis: Redis): TestMethod {
                 throw new Error(`Assertion Failed: HVALS should return an array of 3 elements, but got length ${result?.length}`);
             }
 
-            // Sort the result array to ensure predictable index checking regardless of internal hashmap order
+            // Urutan setelah .sort() default JavaScript berdasarkan standar ASCII:
+            // Index 0: "Anto_..."       (Karakter 'A' = nilai desimal 65)
+            // Index 1: "Core_Developer" (Karakter 'C' = nilai desimal 67)
+            // Index 2: "active"         (Karakter 'a' kecil = nilai desimal 97)
             result.sort();
 
-            if (result[0] !== "Core_Developer") {
-                throw new Error(`Assertion Failed: Index 0 (sorted) should be 'Core_Developer', but got '${result[0]}'`);
+            if (result[0] !== `Anto_${timestamp}`) {
+                throw new Error(`Assertion Failed: Index 0 (sorted) should be 'Anto_${timestamp}', but got '${result[0]}'`);
             }
-            if (result[1] !== "active") {
-                throw new Error(`Assertion Failed: Index 1 (sorted) should be 'active', but got '${result[1]}'`);
+            if (result[1] !== "Core_Developer") {
+                throw new Error(`Assertion Failed: Index 1 (sorted) should be 'Core_Developer', but got '${result[1]}'`);
             }
-            if (result[2] !== `Anto_${timestamp}`) {
-                throw new Error(`Assertion Failed: Index 2 (sorted) should be 'Anto_${timestamp}', but got '${result[2]}'`);
+            if (result[2] !== "active") {
+                throw new Error(`Assertion Failed: Index 2 (sorted) should be 'active', but got '${result[2]}'`);
             }
 
             console.log("✅ TEST HVALS PASSED SUCCESSFULLY!");

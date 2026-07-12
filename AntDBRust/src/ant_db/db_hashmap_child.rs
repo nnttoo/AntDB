@@ -94,4 +94,13 @@ impl AntDBHashChild {
         let keys : Vec<String> = hchild.keys().cloned().collect(); 
         Ok(keys)
     }
+
+     pub fn hvals(&self)->Result<Vec<String>, BoxError>{
+         let Ok(hchild) = self.hashchild.read() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        let keys : Vec<String> = hchild.values().cloned().collect(); 
+        Ok(keys)
+    }
 }

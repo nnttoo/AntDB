@@ -174,4 +174,16 @@ impl AntDBHash {
         };
         return child_hash.hkeys();
     }
+
+    pub fn hvals(&self, key: &str) -> Result<Vec<String>, BoxError> {
+        let item = match self.get_cache_item(&key) {
+            Err(e) => return Err(e),
+            Ok(data) => data,
+        };
+
+        let CacheType::Hash(child_hash) = &item.value else {
+            return Err(Box::from("cacheitem is not hashmap"));
+        };
+        return child_hash.hvals();
+    }
 }
