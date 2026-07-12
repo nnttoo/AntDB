@@ -55,7 +55,7 @@ impl ServerAntDb {
 
     // Haryanto 11 July 2026
 
-    fn create_response(&self, command_name: &str, mut values: Vec<Value>) -> Value {
+    fn create_response(&self, command_name: &str, values: Vec<Value>) -> Value {
         match command_name {
             "CLIENT" => Value::String("OK".to_string()),
             "INFO" => Value::Bulk("# Server\r\nAntDB_version:7.0.0\r\n".to_string()),
