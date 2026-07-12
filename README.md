@@ -58,6 +58,21 @@ To start the AntDB server locally, simply run the executable from your terminal:
 antdb-server.exe
 ```
 
+
+## Benchmark Result
+
+
+| *test* | *rps* | *avg_latency_ms* | *min_latency_ms* | *p50_latency_ms* | *p95_latency_ms* | *p99_latency_ms* | *max_latency_ms* |
+| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
+| *PING_INLINE* | 67,476.38 | 0.109 | 0.008 | 0.079 | 0.263 | 0.431 | 13.663 |
+| *PING_MBULK* | 118,764.84 | 0.063 | 0.008 | 0.047 | 0.151 | 0.215 | 0.767 |
+| *SET* | 98,425.20 | 0.077 | 0.008 | 0.055 | 0.191 | 0.287 | 1.159 |
+| *GET* | 116,550.12 | 0.065 | 0.008 | 0.047 | 0.159 | 0.223 | 0.839 |
+| *HSET* | 114,416.48 | 0.069 | 0.008 | 0.055 | 0.167 | 0.231 | 0.879 |
+| *HGET* | 99,206.34 | 0.077 | 0.008 | 0.055 | 0.191 | 0.287 | 1.471 |
+
+[full benchmark result](redisBenchMark/benchmark_results.md)
+
 ## RoadMap
 ### Implemented Commands
 - String / Key Commands
@@ -97,15 +112,3 @@ antdb-server.exe
   - ⏳ improve Redis command compatibility and tests
   - ⏳ fix expired-key cleanup on 
   
-
-## Benchmark Result
-
-
-| *test* | *rps* | *avg_latency_ms* | *min_latency_ms* | *p50_latency_ms* | *p95_latency_ms* | *p99_latency_ms* | *max_latency_ms* |
-| ----- | ----- | ----- | ----- | ----- | ----- | ----- | ----- |
-| *PING_INLINE* | 67,476.38 | 0.109 | 0.008 | 0.079 | 0.263 | 0.431 | 13.663 |
-| *PING_MBULK* | 118,764.84 | 0.063 | 0.008 | 0.047 | 0.151 | 0.215 | 0.767 |
-| *SET* | 98,425.20 | 0.077 | 0.008 | 0.055 | 0.191 | 0.287 | 1.159 |
-| *GET* | 116,550.12 | 0.065 | 0.008 | 0.047 | 0.159 | 0.223 | 0.839 |
-| *HSET* | 114,416.48 | 0.069 | 0.008 | 0.055 | 0.167 | 0.231 | 0.879 |
-| *HGET* | 99,206.34 | 0.077 | 0.008 | 0.055 | 0.191 | 0.287 | 1.471 |
