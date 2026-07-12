@@ -5,7 +5,8 @@ name: Cross-Compile Build & Publish
 
 on:
   push:
-    branches: [ "main", "master" ]
+    tags:
+      - 'v*' # Triggers automatically when pushing a tag starting with 'v' (e.g., v1.0.0)
   workflow_dispatch:
     inputs:
       custom_version:
@@ -32,10 +33,6 @@ jobs:
   build:
     name: Build for ${{ matrix.job.platform_name }}
     runs-on: ${{ matrix.job.os }}
-    if: |
-      contains(github.event.head_commit.message, '[build ') || 
-      contains(github.event.head_commit.message, '[Build ') || 
-      github.event_name == 'workflow_dispatch'
     
     defaults:
       run:
@@ -149,21 +146,20 @@ jobs:
           path: ./downloaded_artifacts
           merge-multiple: true
 
-      - name: Extract Version From Commit Message or Input
+      - name: Extract Version From Tag or Input
         id: get_version
         run: |
-          INPUT_VERSION="${{ github.event.inputs.custom_version }}"
-          COMMIT_MSG="${{ github.event.head_commit.message }}"
-          if [ ! -z "$INPUT_VERSION" ]; then
-            VERSION="$INPUT_VERSION"
-          elif [[ "$COMMIT_MSG" =~ \[[bB]uild[[:space:]]+([^\]]+)\] ]]; then
-            VERSION="${BASH_REMATCH[1]}"
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.custom_version }}"
+            if [ -z "$VERSION" ]; then
+              VERSION="v$(date +'%Y.%m.%d-%H%M')"
+            fi
           else
-            VERSION="v$(date +'%Y.%m.%d-%H%M')"
+            # Automatically uses the pushed tag name (e.g. v1.0.0)
+            VERSION="${{ github.ref_name }}"
           fi
-          VERSION=$(echo "$VERSION" | xargs)
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Extracted Version: $VERSION"
+          echo "Target Version: $VERSION"
 
       - name: Publish to GitHub Releases
         uses: softprops/action-gh-release@v2
@@ -171,8 +167,8 @@ jobs:
           tag_name: ${{ steps.get_version.outputs.version }}
           name: Release ${{ steps.get_version.outputs.version }}
           body: |
-            Automated cross-compile build for AntDB.
-            Commit message: ${{ github.event.head_commit.message }}
+            Automated production build for AntDB.
+            Triggered by tag/dispatch.
           draft: false
           prerelease: false
           files: ./downloaded_artifacts/*
