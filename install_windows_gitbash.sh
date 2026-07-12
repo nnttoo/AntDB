@@ -61,15 +61,16 @@ case $CHOICE in
         WIN_EXEC_PATH=$(cygpath -w "$INSTALL_DIR/antdb-server.exe")
 
         echo "[*] Registering background task via Task Scheduler..."
-        schtasks.exe /create /tn "AntDB_Server" /tr "\"$WIN_EXEC_PATH\"" /sc onstart /ru "SYSTEM" /f
+        # Ditambahkan MSYS_NO_PATHCONV=1 agar /create tidak diubah jadi path oleh Git Bash
+        MSYS_NO_PATHCONV=1 schtasks.exe /create /tn "AntDB_Server" /tr "\"$WIN_EXEC_PATH\"" /sc onstart /ru "SYSTEM" /f
 
         if [ $? -eq 0 ]; then
             echo "[*] Starting AntDB service..."
-            schtasks.exe /run /tn "AntDB_Server"
+            MSYS_NO_PATHCONV=1 schtasks.exe /run /tn "AntDB_Server"
             echo "============================================="
             echo "[+] AntDB service installed and started successfully!"
             echo "[*] It will run in the background automatically on system boot."
-            echo "[*] To stop it: schtasks.exe /end /tn AntDB_Server"
+            echo "[*] To stop it: MSYS_NO_PATHCONV=1 schtasks.exe /end /tn AntDB_Server"
             echo "============================================="
         else
             echo "[!] Failed to create Windows background task."
