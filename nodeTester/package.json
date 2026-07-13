@@ -6,7 +6,7 @@
   "scripts": {
     "db": "..\\AntDBRust\\target\\release\\AntDB.exe",
     "node_test": "tsx ./src/index.ts",
-    "node_20mb" : "tsx ./src/test_20mb.ts",
+    "node_bigsize" : "tsx ./src/test_big_size.ts",
     "run": "concurrently --names \"AntDB,Node\" npm:db npm:node_test"
   },
   "author": "",

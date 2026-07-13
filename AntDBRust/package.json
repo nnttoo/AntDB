@@ -12,7 +12,7 @@
     "run" : "npm run cargo_run -- \"npm run sleep && npm run node_test \"",
     "benchmark" : "cd ../redisBenchMark/ && npm run run_all",
     "benchmark_only" : "cd ../redisBenchMark/ && npm run run_bmark",
-    "benchmark_400mb" : "npm run cargo_run -- \"npm run sleep && cd ../nodeTester/ && npm run node_20mb \""
+    "benchmark_400mb" : "npm run cargo_run -- \"npm run sleep && cd ../nodeTester/ && npm run node_bigsize -- 400mb \""
   },
   "author": "",
   "license": "ISC",
