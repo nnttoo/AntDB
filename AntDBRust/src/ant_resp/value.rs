@@ -1,6 +1,6 @@
 // Haryanto 11 July 2026
 
-use std::io::{self, BufRead, Read};
+use std::io::{self, BufRead};
 
 /// Represents a RESP value matching the original `resp::Value` structure.
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -91,7 +91,8 @@ pub fn parse_resp<R: BufRead>(reader: &mut R) -> io::Result<Value> {
             let line = read_line(reader)?;
             let s = std::str::from_utf8(&line)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-            let n = s.parse::<i64>()
+            let n = s
+                .parse::<i64>()
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
             Ok(Value::Integer(n))
         }
@@ -99,14 +100,18 @@ pub fn parse_resp<R: BufRead>(reader: &mut R) -> io::Result<Value> {
             let line = read_line(reader)?;
             let len_str = std::str::from_utf8(&line)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-            let len = len_str.parse::<i64>()
+            let len = len_str
+                .parse::<i64>()
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
             if len == -1 {
                 return Ok(Value::Null);
             }
             if len < 0 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid Bulk String length"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid Bulk String length",
+                ));
             }
 
             let len = len as usize;
@@ -116,7 +121,10 @@ pub fn parse_resp<R: BufRead>(reader: &mut R) -> io::Result<Value> {
             let mut crlf = [0u8; 2];
             reader.read_exact(&mut crlf)?;
             if crlf != [b'\r', b'\n'] {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Missing CRLF after Bulk String content"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Missing CRLF after Bulk String content",
+                ));
             }
 
             match String::from_utf8(buf) {
@@ -128,14 +136,18 @@ pub fn parse_resp<R: BufRead>(reader: &mut R) -> io::Result<Value> {
             let line = read_line(reader)?;
             let len_str = std::str::from_utf8(&line)
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
-            let len = len_str.parse::<i64>()
+            let len = len_str
+                .parse::<i64>()
                 .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
 
             if len == -1 {
                 return Ok(Value::Null);
             }
             if len < 0 {
-                return Err(io::Error::new(io::ErrorKind::InvalidData, "Invalid Array length"));
+                return Err(io::Error::new(
+                    io::ErrorKind::InvalidData,
+                    "Invalid Array length",
+                ));
             }
 
             let len = len as usize;
@@ -156,11 +168,14 @@ pub fn parse_resp<R: BufRead>(reader: &mut R) -> io::Result<Value> {
 fn read_line<R: BufRead>(reader: &mut R) -> io::Result<Vec<u8>> {
     let mut line = Vec::new();
     reader.read_until(b'\n', &mut line)?;
-    
+
     if line.ends_with(&[b'\r', b'\n']) {
         line.truncate(line.len() - 2);
         Ok(line)
     } else {
-        Err(io::Error::new(io::ErrorKind::UnexpectedEof, "Line did not end with CRLF"))
+        Err(io::Error::new(
+            io::ErrorKind::UnexpectedEof,
+            "Line did not end with CRLF",
+        ))
     }
 }
