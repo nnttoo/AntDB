@@ -24,6 +24,10 @@ const redis: Redis = new Redis({
 });
 async function testSafe() {
 
+    let info = await redis.info();
+    console.log("=====================================");
+    console.log("INFO : " + info);
+    console.log("=====================================");
     let tabResult: TestMethod[] = [
         sendRawPing({
             port: redisPort,

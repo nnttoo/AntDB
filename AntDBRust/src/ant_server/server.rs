@@ -53,9 +53,13 @@ impl ServerAntDb {
     // Haryanto 11 July 2026
 
     fn create_response(&self, command_name: &str, values: Vec<Value>) -> Value {
+        
+        let app_version: &'static str = env!("CARGO_PKG_VERSION");
+        let app_version = format!("# AntDB Server version: {} \r\n", app_version).to_string();
+        
         match command_name {
             "CLIENT" => Value::String("OK".to_string()),
-            "INFO" => Value::Bulk("# Server\r\nAntDB_version:7.0.0\r\n".to_string()),
+            "INFO" => Value::Bulk(app_version),
             "PING" => self.resp.ping(values),
             "COMMAND" => Value::Array(vec![]),
             "SET" => self.resp.set(values),
