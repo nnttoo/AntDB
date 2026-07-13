@@ -6,12 +6,13 @@
   "scripts": {
     "build": "cargo build --release",
     "build_linux": "cargo zigbuild --release --target x86_64-unknown-linux-musl",
-    "run_test_node" : "cd ../nodeTester/ && npm run run_node",
-    "cargo_run" : "cargo run",
-    "sleep_and_test" : "node -e \"setTimeout(() => {}, 4000)\" && npm run run_test_node",
-    "run" : "concurrently -n  AntDb,Test npm:cargo_run npm:sleep_and_test",
+    "node_test" : "cd ../nodeTester/ && npm run node_test",
+    "cargo_run" : "concurrently -n  AntDb,Test \"cargo run\"",
+    "sleep" : "node -e \"setTimeout(() => {}, 4000)\"",
+    "run" : "npm run cargo_run -- \"npm run sleep && npm run node_test \"",
     "benchmark" : "cd ../redisBenchMark/ && npm run run_all",
-    "benchmark_only" : "cd ../redisBenchMark/ && npm run run_bmark"
+    "benchmark_only" : "cd ../redisBenchMark/ && npm run run_bmark",
+    "benchmark_400mb" : "npm run cargo_run -- \"npm run sleep && cd ../nodeTester/ && npm run node_20mb \""
   },
   "author": "",
   "license": "ISC",

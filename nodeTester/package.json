@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "run_db": "..\\AntDBRust\\target\\release\\AntDB.exe",
-    "run_node": "tsx ./src/index.ts",
-    "run": "concurrently --names \"AntDB,Node\" --prefix-colors \"blue,green\" \"npm run run_db\" \"npm run run_node\"",
-    "run_stress" : "tsx ./src/stresttest.ts"
+    "db": "..\\AntDBRust\\target\\release\\AntDB.exe",
+    "node_test": "tsx ./src/index.ts",
+    "node_20mb" : "tsx ./src/test_20mb.ts",
+    "run": "concurrently --names \"AntDB,Node\" npm:db npm:node_test"
   },
   "author": "",
   "license": "ISC",

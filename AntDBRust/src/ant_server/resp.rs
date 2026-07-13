@@ -64,7 +64,7 @@ impl ServerAntDbResp {
 
         let db = &self.app_ctx.ant_db.db_string;
 
-        match db.get(key_bytes) {
+        match db.get(&key_bytes) {
             Ok(data) => Value::String(data),
             Err(_) => Value::Null,
         }

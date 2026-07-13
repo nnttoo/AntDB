@@ -31,13 +31,13 @@ impl AntDBString {
         Ok(())
     }
 
-    pub fn get(&self, key: String) -> Result<String, BoxError> {
+    pub fn get(&self, key: &str) -> Result<String, BoxError> {
         let data = {
             let Ok(hmap_lock) = self.db.hash_map.read() else {
                 return Err(Box::from("error lock"));
             };
 
-            let Some(data) = hmap_lock.get(&key) else {
+            let Some(data) = hmap_lock.get(key) else {
                 return Err(Box::from("no key font"));
             };
 
