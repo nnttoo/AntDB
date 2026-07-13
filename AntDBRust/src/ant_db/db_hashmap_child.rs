@@ -10,6 +10,11 @@ pub struct AntDBHashChild {
     hashchild: Arc<RwLock<HashMap<String, String>>>,
 }
 
+pub struct HgetAllResult {
+    pub key: String,
+    pub value: String,
+}
+
 impl AntDBHashChild {
     pub fn new() -> Self {
         AntDBHashChild {
@@ -86,21 +91,37 @@ impl AntDBHashChild {
         Ok(result)
     }
 
-    pub fn hkeys(&self)->Result<Vec<String>, BoxError>{
-         let Ok(hchild) = self.hashchild.read() else {
+    pub fn hkeys(&self) -> Result<Vec<String>, BoxError> {
+        let Ok(hchild) = self.hashchild.read() else {
             return Err(Box::from("error lock hchild"));
         };
 
-        let keys : Vec<String> = hchild.keys().cloned().collect(); 
+        let keys: Vec<String> = hchild.keys().cloned().collect();
         Ok(keys)
     }
 
-     pub fn hvals(&self)->Result<Vec<String>, BoxError>{
-         let Ok(hchild) = self.hashchild.read() else {
+    pub fn hvals(&self) -> Result<Vec<String>, BoxError> {
+        let Ok(hchild) = self.hashchild.read() else {
             return Err(Box::from("error lock hchild"));
         };
 
-        let keys : Vec<String> = hchild.values().cloned().collect(); 
+        let keys: Vec<String> = hchild.values().cloned().collect();
         Ok(keys)
+    }
+
+    pub fn hgetall(&self) -> Result<Vec<HgetAllResult>, BoxError> {
+        let Ok(hchild) = self.hashchild.read() else {
+            return Err(Box::from("error lock hchild"));
+        };
+
+        let mut result: Vec<HgetAllResult> = Vec::new();
+        for (field, value) in hchild.iter() {
+            result.push(HgetAllResult {
+                key: field.clone(),
+                value: value.clone(),
+            });
+        }
+
+        Ok(result)
     }
 }

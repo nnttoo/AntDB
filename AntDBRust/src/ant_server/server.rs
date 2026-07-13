@@ -74,6 +74,7 @@ impl ServerAntDb {
             "HMGET" => self.resp_hashmap.hmget(values),
             "HKEYS" => self.resp_hashmap.hkeys(values),
             "HVALS" => self.resp_hashmap.hvals(values),
+            "HGETALL" => self.resp_hashmap.hgetall(values),
 
             "DEL" => self.resp.del(values),
             "EXISTS" => self.resp.exists(values),

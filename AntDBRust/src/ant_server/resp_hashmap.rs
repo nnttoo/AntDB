@@ -159,19 +159,18 @@ impl ServerAntDbRespHashMap {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let mut val_arr: Vec<Value> = Vec::new(); 
+        let mut val_arr: Vec<Value> = Vec::new();
 
-        let db = &self.app_ctx.ant_db.db_hash; 
-        let Ok(hkeys) = db.hkeys(&key) else { 
+        let db = &self.app_ctx.ant_db.db_hash;
+        let Ok(hkeys) = db.hkeys(&key) else {
             return Value::Array(val_arr);
         };
 
-         
         for f in hkeys {
             val_arr.push(Value::String(f));
         }
 
-        Value::Array(val_arr) 
+        Value::Array(val_arr)
     }
 
     pub fn hvals(&self, mut values: Vec<Value>) -> Value {
@@ -184,18 +183,42 @@ impl ServerAntDbRespHashMap {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let mut val_arr: Vec<Value> = Vec::new(); 
+        let mut val_arr: Vec<Value> = Vec::new();
 
-        let db = &self.app_ctx.ant_db.db_hash; 
-        let Ok(hkeys) = db.hvals(&key) else { 
+        let db = &self.app_ctx.ant_db.db_hash;
+        let Ok(hkeys) = db.hvals(&key) else {
             return Value::Array(val_arr);
         };
 
-         
         for f in hkeys {
             val_arr.push(Value::String(f));
         }
 
-        Value::Array(val_arr) 
+        Value::Array(val_arr)
+    }
+
+    pub fn hgetall(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'hdel' command".to_string());
+        }
+
+        let key_variant = values.remove(0);
+        let Value::Bulk(key) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_hash;
+
+        let mut val_arr: Vec<Value> = Vec::new();
+        let Ok(hgetall) = db.hgetall(&key) else {
+            return Value::Array(val_arr);
+        };
+
+        for item in hgetall{
+            val_arr.push(Value::String(item.key));
+            val_arr.push(Value::String(item.value));
+        }
+
+        Value::Array(val_arr)
     }
 }

@@ -5,7 +5,7 @@ use super::{
     db_hashmap_child::AntDBHashChild,
 };
 
-use crate::BoxError;
+use crate::{BoxError, ant_db::db_hashmap_child::HgetAllResult};
 
 pub struct AntDBHash {
     db: Arc<AntDB>,
@@ -15,7 +15,7 @@ impl AntDBHash {
     pub fn new(db: Arc<AntDB>) -> Arc<Self> {
         Arc::new(Self { db: db })
     }
-    fn get_cache_item(&self, key: &str) -> Result<CacheItem, BoxError> {
+    fn get_hchild(&self, key: &str) -> Result<AntDBHashChild, BoxError> {
         let item = {
             let Ok(hmap_lock) = self.db.hash_map.read() else {
                 return Err(Box::from("error lock"));
@@ -32,7 +32,11 @@ impl AntDBHash {
             return Err(Box::from("key is expire"));
         }
 
-        Ok(item.clone())
+        let CacheType::Hash(hchild) = &item.value else {
+            return Err(Box::from("value is not hashmap"));
+        };
+
+        Ok(hchild.clone())
     }
 
     pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
@@ -66,15 +70,7 @@ impl AntDBHash {
     }
 
     pub fn hget(&self, key: String, field: String) -> Result<String, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(hchild) = &item.value else {
-            return Err(Box::from("value is not hashmap"));
-        };
-
+        let hchild = self.get_hchild(&key)?;
         let Some(val) = hchild.get(&field) else {
             return Err(Box::from("no field found"));
         };
@@ -95,21 +91,8 @@ impl AntDBHash {
     }
 
     pub fn hdel(&self, key: String, fields: Vec<String>) -> Result<i64, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
-
-        let deleted = match child_hash.del(fields) {
-            Ok(deleted) => deleted,
-            Err(e) => {
-                return Err(e);
-            }
-        };
+        let child_hash = self.get_hchild(&key)?;
+        let deleted = child_hash.del(fields)?;
 
         self.hdel_if_empty(&key, &child_hash);
 
@@ -117,73 +100,34 @@ impl AntDBHash {
     }
 
     pub fn hlen(&self, key: &str) -> Result<i64, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
+        let child_hash = self.get_hchild(&key)?;
 
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
-
-        let len = match child_hash.len() {
-            Ok(l) => l,
-            Err(e) => return Err(e),
-        };
-
-        match i64::try_from(len) {
-            Ok(nilai) => Ok(nilai),
-            Err(_) => return Err(Box::from("error parse len".to_string())),
-        }
+        let len = child_hash.len()?;
+        Ok(i64::try_from(len)?)
     }
 
     pub fn hexist(&self, key: &str, field: &str) -> Result<bool, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
-
+        let child_hash = self.get_hchild(&key)?;
         return child_hash.exist(field);
     }
 
     pub fn hmget(&self, key: &str, fields: Vec<String>) -> Result<Vec<Option<String>>, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
-
+        let child_hash = self.get_hchild(&key)?;
         return child_hash.hmget(fields);
     }
 
     pub fn hkeys(&self, key: &str) -> Result<Vec<String>, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
+        let child_hash = self.get_hchild(&key)?;
         return child_hash.hkeys();
     }
 
     pub fn hvals(&self, key: &str) -> Result<Vec<String>, BoxError> {
-        let item = match self.get_cache_item(&key) {
-            Err(e) => return Err(e),
-            Ok(data) => data,
-        };
-
-        let CacheType::Hash(child_hash) = &item.value else {
-            return Err(Box::from("cacheitem is not hashmap"));
-        };
+        let child_hash = self.get_hchild(&key)?;
         return child_hash.hvals();
+    }
+
+    pub fn hgetall(&self, key: &str) -> Result<Vec<HgetAllResult>, BoxError> {
+        let child_hash =   self.get_hchild(&key)?; 
+        return child_hash.hgetall();
     }
 }
