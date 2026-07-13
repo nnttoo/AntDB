@@ -29,6 +29,57 @@ export function testHset(redis: Redis): TestMethod {
 
 }
 
+export function testHsetObjectPayload(redis: Redis): TestMethod {
+    return {
+        name: "hset_object",
+        success: false,
+        async onTest() {
+            // Haryanto 13 July 2026
+            console.log("=== TEST HSET WITH OBJECT PAYLOAD ===");
+            const key = "testhash:hsetobject";
+
+            const payloadDuniaNyata = {
+                title: "Belajar Rust Bareng Suami Kesayangan",
+                content: "A",
+                status: "active",
+                version: "2.0"
+            };
+
+            // 1. Clean up any existing keys to keep the test isolated
+            await redis.del(key);
+
+            // 2. Store the object directly using HSET
+            console.log("Storing object payload directly with HSET...");
+            const hsetResult = await redis.hset(key, payloadDuniaNyata);
+            console.log("HSET object return value (expected 4):", hsetResult);
+
+            // HSET returns the number of fields that were added
+            if (hsetResult !== 4) {
+                throw new Error(`Assertion Failed: HSET with object should return 4 fields added, but got ${hsetResult}`);
+            }
+
+            // 3. Verify all fields using HGETALL
+            console.log("Verifying stored object properties via HGETALL...");
+            const storedData = await redis.hgetall(key);
+
+            if (storedData.title !== payloadDuniaNyata.title) {
+                throw new Error(`Assertion Failed: Expected title '${payloadDuniaNyata.title}', but got '${storedData.title}'`);
+            }
+            if (storedData.content !== payloadDuniaNyata.content) {
+                throw new Error(`Assertion Failed: Expected content '${payloadDuniaNyata.content}', but got '${storedData.content}'`);
+            }
+            if (storedData.status !== payloadDuniaNyata.status) {
+                throw new Error(`Assertion Failed: Expected status '${payloadDuniaNyata.status}', but got '${storedData.status}'`);
+            }
+            if (storedData.version !== payloadDuniaNyata.version) {
+                throw new Error(`Assertion Failed: Expected version '${payloadDuniaNyata.version}', but got '${storedData.version}'`);
+            }
+
+            console.log("✅ TEST HSET WITH OBJECT PAYLOAD PASSED SUCCESSFULLY!");
+        }
+    };
+}
+
 
 
 export function testHdelMultiFields(redis: Redis): TestMethod {

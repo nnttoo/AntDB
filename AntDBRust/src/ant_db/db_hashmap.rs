@@ -2,10 +2,10 @@ use std::sync::Arc;
 
 use super::{
     db::{AntDB, CacheItem, CacheType},
-    db_hashmap_child::AntDBHashChild,
+    db_hashmap_child::{AntDBHashChild, ValPairs},
 };
 
-use crate::{BoxError, ant_db::db_hashmap_child::HgetAllResult};
+use crate::BoxError;
 
 pub struct AntDBHash {
     db: Arc<AntDB>,
@@ -39,7 +39,7 @@ impl AntDBHash {
         Ok(hchild.clone())
     }
 
-    pub fn hset(&self, key: String, field: String, value: String) -> Result<(), BoxError> {
+    pub fn hset(&self, key: String, valpair: Vec<ValPairs>) -> Result<(), BoxError> {
         let Ok(mut hmap_lock) = self.db.hash_map.write() else {
             return Err(Box::from("error lock"));
         };
@@ -49,23 +49,16 @@ impl AntDBHash {
             expires_at: None,
         });
 
-        match &mut entry.value {
-            CacheType::Hash(hash_map) => match hash_map.insert(field, value) {
-                Ok(_) => {}
-                Err(e) => {
-                    return Err(e);
-                }
-            },
+        let hash_map = match &entry.value {
+            CacheType::Hash(hm) => hm.clone(),
             CacheType::String(_) => {
                 let hash_map = AntDBHashChild::new();
-                match hash_map.insert(field, value) {
-                    Ok(_) => {}
-                    Err(e) => return Err(e),
-                };
-                entry.value = CacheType::Hash(hash_map);
+                entry.value = CacheType::Hash((hash_map).clone());
+                hash_map.clone()
             }
-        }
+        };
 
+        hash_map.insert(valpair)?;
         Ok(())
     }
 
@@ -126,8 +119,8 @@ impl AntDBHash {
         return child_hash.hvals();
     }
 
-    pub fn hgetall(&self, key: &str) -> Result<Vec<HgetAllResult>, BoxError> {
-        let child_hash =   self.get_hchild(&key)?; 
+    pub fn hgetall(&self, key: &str) -> Result<Vec<ValPairs>, BoxError> {
+        let child_hash = self.get_hchild(&key)?;
         return child_hash.hgetall();
     }
 }

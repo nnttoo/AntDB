@@ -1,5 +1,5 @@
 use super::tools::get_list_fields;
-use crate::{ant_resp::value::Value, app_ctx::AppCtxArc};
+use crate::{ant_db::db_hashmap_child::ValPairs, ant_resp::value::Value, app_ctx::AppCtxArc};
 
 pub struct ServerAntDbRespHashMap {
     pub app_ctx: AppCtxArc,
@@ -35,18 +35,32 @@ impl ServerAntDbRespHashMap {
         }
 
         let key_variant = values.remove(0);
-        let field_variant = values.remove(0);
-        let val_variant = values.remove(0);
 
-        let (Value::Bulk(key), Value::Bulk(field), Value::Bulk(value)) =
-            (key_variant, field_variant, val_variant)
-        else {
+        let Value::Bulk(key) = key_variant else {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
-        let db = &self.app_ctx.ant_db.db_hash;
 
-        match db.hset(key, field, value) {
-            Ok(_) => Value::String("OK".to_string()),
+        let valpair = {
+            let mut vpair: Vec<ValPairs> = Vec::new();
+            while values.len() >= 2 {
+                let field_variant = values.remove(0);
+                let val_variant = values.remove(0);
+
+                if let (Value::Bulk(field), Value::Bulk(value)) = (field_variant, val_variant) {
+                    vpair.push(ValPairs{
+                        key : field,
+                        value : value,
+                    });
+                }  
+            }
+
+            vpair
+        };
+
+        let vpairlen = valpair.len() as i64;
+        let db = &self.app_ctx.ant_db.db_hash; 
+        match db.hset(key, valpair) {
+            Ok(_) => Value::Integer(vpairlen),
             Err(e) => Value::Error(e.to_string()),
         }
     }
@@ -214,7 +228,7 @@ impl ServerAntDbRespHashMap {
             return Value::Array(val_arr);
         };
 
-        for item in hgetall{
+        for item in hgetall {
             val_arr.push(Value::String(item.key));
             val_arr.push(Value::String(item.value));
         }

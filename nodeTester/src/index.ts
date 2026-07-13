@@ -3,7 +3,7 @@ import Redis from 'ioredis';
 import { sleep, TestMethod } from './sleep';
 import { testExpire } from './testexp';
 import { testPersist } from './test_persist';
-import { testHdelMultiFields, testHexists, testHlen, testHset } from './test_hset';
+import { testHdelMultiFields, testHexists, testHlen, testHset, testHsetObjectPayload } from './test_hset';
 import { testMultipleDel } from './test_del';
 import { testHmget } from './test_hmget';
 import { sendRawPing, testExists, testSet, testSetex } from './test_simple';
@@ -33,6 +33,7 @@ async function testSafe() {
         testSetex(redis),
         testExpire(redis),
         testHset(redis),
+        testHsetObjectPayload(redis),
         testMultipleDel(redis),
         testExists(redis),
         testPersist(redis),

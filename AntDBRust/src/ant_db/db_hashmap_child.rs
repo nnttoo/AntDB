@@ -10,7 +10,7 @@ pub struct AntDBHashChild {
     hashchild: Arc<RwLock<HashMap<String, String>>>,
 }
 
-pub struct HgetAllResult {
+pub struct ValPairs {
     pub key: String,
     pub value: String,
 }
@@ -22,12 +22,14 @@ impl AntDBHashChild {
         }
     }
 
-    pub fn insert(&self, field: String, value: String) -> Result<(), BoxError> {
+    pub fn insert(&self, valpair: Vec<ValPairs>) -> Result<(), BoxError> {
         let Ok(mut hchild) = self.hashchild.write() else {
             return Err(Box::from("error lock hchild"));
         };
 
-        hchild.insert(field, value);
+        for item in valpair {
+            hchild.insert(item.key, item.value);
+        }
 
         Ok(())
     }
@@ -109,14 +111,14 @@ impl AntDBHashChild {
         Ok(keys)
     }
 
-    pub fn hgetall(&self) -> Result<Vec<HgetAllResult>, BoxError> {
+    pub fn hgetall(&self) -> Result<Vec<ValPairs>, BoxError> {
         let Ok(hchild) = self.hashchild.read() else {
             return Err(Box::from("error lock hchild"));
         };
 
-        let mut result: Vec<HgetAllResult> = Vec::new();
+        let mut result: Vec<ValPairs> = Vec::new();
         for (field, value) in hchild.iter() {
-            result.push(HgetAllResult {
+            result.push(ValPairs {
                 key: field.clone(),
                 value: value.clone(),
             });
