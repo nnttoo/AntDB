@@ -6,7 +6,8 @@
   "scripts": {
     "run_db": "..\\AntDBRust\\target\\release\\AntDB.exe",
     "run_node": "tsx ./src/index.ts",
-    "run": "concurrently --names \"AntDB,Node\" --prefix-colors \"blue,green\" \"npm run run_db\" \"npm run run_node\""
+    "run": "concurrently --names \"AntDB,Node\" --prefix-colors \"blue,green\" \"npm run run_db\" \"npm run run_node\"",
+    "run_stress" : "tsx ./src/stresttest.ts"
   },
   "author": "",
   "license": "ISC",
