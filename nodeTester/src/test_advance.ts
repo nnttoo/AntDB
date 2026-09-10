@@ -2,7 +2,7 @@
 
 import Redis from "ioredis";
 import { TestMethod } from "./sleep";
- 
+
 export function testMSet(redis: Redis): TestMethod {
     return {
         name: "MSET",
@@ -80,6 +80,47 @@ export function testMGet(redis: Redis): TestMethod {
             }
 
             console.log("✅ TEST MGET PASSED SUCCESSFULLY!");
+        }
+    };
+}
+
+export function testIncr(redis: Redis): TestMethod {
+    return {
+        name: "INCR",
+        success: false,
+        async onTest() {
+            console.log("=== TEST INCR ===");
+
+            const key = "testkey_incr";
+
+            console.log('Cleaning up key before test...');
+            await redis.del(key);
+
+            console.log('Testing INCR on a non-existing key (should initialize to 0 and become 1)...');
+            let result = await redis.incr(key);
+            console.log(`Result:`, result);
+
+            if (result !== 1) {
+                throw new Error(`Assertion Failed: INCR on non-existing key should return 1, but got '${result}'`);
+            }
+
+            console.log('Testing INCR on an existing numeric key (should increment to 2)...');
+            result = await redis.incr(key);
+            console.log(`Result:`, result);
+
+            if (result !== 2) {
+                throw new Error(`Assertion Failed: INCR should increment value to 2, but got '${result}'`);
+            }
+
+            console.log('Verifying final stored value with GET...');
+            const storedValue = await redis.get(key);
+            console.log(`Stored value check:`, storedValue);
+
+            if (storedValue !== "2") {
+                throw new Error(`Assertion Failed: Final stored value should be '2', but got '${storedValue}'`);
+            }
+
+            console.log("✅ TEST INCR PASSED SUCCESSFULLY!");
         }
     };
 }
