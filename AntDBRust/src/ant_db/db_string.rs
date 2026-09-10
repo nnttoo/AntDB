@@ -83,7 +83,7 @@ impl AntDBString {
         for item in values {
             let key = item.key;
             let val = item.value;
-            
+
             hmap_lock.insert(
                 key,
                 CacheItem {
@@ -94,5 +94,56 @@ impl AntDBString {
         }
 
         Ok(())
+    }
+
+    pub fn multiple_get(&self, keys: Vec<String>) -> Result<Vec<Option<String>>, BoxError> {
+        let keyslen = keys.len();
+        let mut r: Vec<Option<String>> = Vec::with_capacity(keyslen);
+
+        let item_check = {
+            let mut ic: Vec<(String, Option<CacheItem>)> = Vec::with_capacity(keyslen);
+            let Ok(hmap_lock) = self.db.hash_map.read() else {
+                return Err(Box::from("error lock"));
+            };
+
+            for item in keys {
+                let Some(data) = hmap_lock.get(&item) else {
+                    ic.push(((&item).clone(), None));
+                    continue;
+                };
+
+                ic.push((item, Some(data.clone())));
+            }
+
+            ic
+        };
+
+        for (key, data) in item_check {
+            let strdata: Option<String> = 'block: {
+                let Some(data) = data else { 
+                    break 'block None;
+                
+                };
+ 
+                if self.db.expire_delete(&key, &data){
+                    break  'block None;
+                }
+
+                let CacheType::String(value_str) = data.value else {
+                    break  'block None;
+                };
+
+                let Ok(str) = value_str.get() else {
+
+                    break  'block None;
+                };
+
+                Some(str)
+            }; 
+
+            r.push(strdata);
+        }
+
+        Ok(r)
     }
 }

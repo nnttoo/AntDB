@@ -100,7 +100,7 @@ antdb-server.exe
   - ✅ HGETALL
 - Advanced String Commands
   - ✅ MSET
-  - ⏳ MGET
+  - ✅ MGET
   - ⏳ INCR
   - ⏳ DECR
   - ⏳ APPEND

@@ -2,7 +2,7 @@
 
 import Redis from "ioredis";
 import { TestMethod } from "./sleep";
-
+ 
 export function testMSet(redis: Redis): TestMethod {
     return {
         name: "MSET",
@@ -29,6 +29,57 @@ export function testMSet(redis: Redis): TestMethod {
             }
 
             console.log("✅ TEST MSET PASSED SUCCESSFULLY!");
+        }
+    };
+}
+
+export function testMGet(redis: Redis): TestMethod {
+    return {
+        name: "MGET",
+        success: false,
+        async onTest() {
+            console.log("=== TEST MGET ===");
+
+            const testData: Record<string, string> = {
+                "testkey_mget_1": "Value AntDb 1",
+                "testkey_mget_2": "Value AntDb 2",
+                "testkey_mget_3": "Value AntDb 3"
+            };
+
+            const keysToFetch = [...Object.keys(testData), "non_existing_key_mget"];
+
+            console.log('Preparing test data using MSET...');
+            await redis.mset(testData);
+
+            console.log('Fetching multiple keys using MGET...');
+            const results: (string | null)[] = await redis.mget(...keysToFetch);
+
+            console.log('Verifying fetched values...');
+
+            // Verify existing keys
+            const keysList = Object.keys(testData);
+            for (let i = 0; i < keysList.length; i++) {
+                const key = keysList[i];
+                const expectedValue = testData[key];
+                const actualValue = results[i];
+
+                console.log(`Key: ${key} | Expected: '${expectedValue}' | Got: '${actualValue}'`);
+
+                if (actualValue !== expectedValue) {
+                    throw new Error(`Assertion Failed: MGET for '${key}' should return '${expectedValue}', but got '${actualValue}'`);
+                }
+            }
+
+            // Verify non-existing key returns null
+            const nonExistingIndex = keysToFetch.length - 1;
+            const nonExistingResult = results[nonExistingIndex];
+            console.log(`Key: non_existing_key_mget | Expected: null | Got:`, nonExistingResult);
+
+            if (nonExistingResult !== null) {
+                throw new Error(`Assertion Failed: MGET for non-existing key should return null, but got '${nonExistingResult}'`);
+            }
+
+            console.log("✅ TEST MGET PASSED SUCCESSFULLY!");
         }
     };
 }

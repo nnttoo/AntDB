@@ -83,6 +83,7 @@ impl ServerAntDb {
             "PERSIST" => self.resp.persist(values),
 
             "MSET" => self.resp_advance.mset(values),
+            "MGET" => self.resp_advance.mget(values),
 
             _ => {
                 println!("command unhandled : {}", command_name);
