@@ -99,7 +99,7 @@ antdb-server.exe
   - ✅ HVALS
   - ✅ HGETALL
 - Advanced String Commands
-  - ⏳ MSET
+  - ✅ MSET
   - ⏳ MGET
   - ⏳ INCR
   - ⏳ DECR

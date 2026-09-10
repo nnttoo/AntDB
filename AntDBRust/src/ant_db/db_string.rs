@@ -4,7 +4,7 @@ use super::{
 };
 use std::sync::Arc;
 
-use crate::BoxError;
+use crate::{BoxError, ant_db::db_hashmap_child::ValPairs};
 
 pub struct AntDBString {
     db: Arc<AntDB>,
@@ -71,6 +71,27 @@ impl AntDBString {
                 expires_at: Some(CacheItem::set_expire(ttl)),
             },
         );
+
+        Ok(())
+    }
+
+    pub fn multiple_set(&self, values: Vec<ValPairs>) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.db.hash_map.write() else {
+            return Err(Box::from("error lock"));
+        };
+
+        for item in values {
+            let key = item.key;
+            let val = item.value;
+            
+            hmap_lock.insert(
+                key,
+                CacheItem {
+                    value: CacheType::String(AntDBStringChild::new(val)),
+                    expires_at: None,
+                },
+            );
+        }
 
         Ok(())
     }

@@ -8,16 +8,14 @@ use tokio_util::bytes::BytesMut;
 
 use super::resp::ServerAntDbResp;
 use crate::{
-    ant_resp::value::{Value, parse_resp},
-    ant_server::resp_hashmap::ServerAntDbRespHashMap,
-    app_ctx::AppCtxArc,
-    utils_tools::BoxError,
+    ant_resp::value::{Value, parse_resp}, ant_server::{resp_advance::ServerAntDbRespAdvance, resp_hashmap::ServerAntDbRespHashMap}, app_ctx::AppCtxArc, utils_tools::BoxError,
 };
 
 pub struct ServerAntDb {
     pub app_ctx: AppCtxArc,
     resp: ServerAntDbResp,
     resp_hashmap: ServerAntDbRespHashMap,
+    resp_advance : ServerAntDbRespAdvance,
 }
 
 pub type ServerAntDbArc = Arc<ServerAntDb>;
@@ -27,7 +25,8 @@ impl ServerAntDb {
         Self {
             app_ctx: app_ctx.clone(),
             resp: ServerAntDbResp::new(app_ctx.clone()),
-            resp_hashmap: ServerAntDbRespHashMap::new(app_ctx),
+            resp_hashmap: ServerAntDbRespHashMap::new(app_ctx.clone()),
+            resp_advance : ServerAntDbRespAdvance::new(app_ctx) 
         }
     }
 
@@ -82,6 +81,9 @@ impl ServerAntDb {
             "TTL" => self.resp.ttl(values),
             "PTTL" => self.resp.pttl(values),
             "PERSIST" => self.resp.persist(values),
+
+            "MSET" => self.resp_advance.mset(values),
+
             _ => {
                 println!("command unhandled : {}", command_name);
                 let err_msg = format!("ERR unknown command '{}'", command_name);
