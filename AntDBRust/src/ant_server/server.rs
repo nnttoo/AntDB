@@ -90,6 +90,7 @@ impl ServerAntDb {
             "INCR" => self.resp_advance.incr(values),
             "DECR" => self.resp_advance.decr(values),
             "APPEND" => self.resp_advance.append(values),
+            "GETSET" =>self.resp_advance.getset(values),
 
             _ => {
                 println!("command unhandled : {}", command_name);

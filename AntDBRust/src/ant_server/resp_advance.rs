@@ -101,4 +101,28 @@ impl ServerAntDbRespAdvance {
             _ => Value::Null,
         }
     }
+
+     pub fn getset(&self, mut values: Vec<Value>) -> Value {
+        if values.len() < 2 {
+            return Value::Error("ERR wrong number of arguments for 'set' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let val_variant = values.remove(0);
+
+        let (Value::Bulk(key), Value::Bulk(value)) = (key_variant, val_variant) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_string;
+
+        match db.getset(key, value) {
+            Ok(n) => {
+                match n {
+                    Some(n)=>Value::String(n),
+                    None=>Value::Null
+                }
+            },
+            _ => Value::Null,
+        }
+    }
 }

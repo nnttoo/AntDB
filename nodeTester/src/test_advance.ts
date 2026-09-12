@@ -212,3 +212,46 @@ export function testAppend(redis: Redis): TestMethod {
         }
     };
 }
+
+// Haryanto 12 September 2026
+
+export function testGetSet(redis: Redis): TestMethod {
+    return {
+        name: "GETSET",
+        success: false,
+        async onTest() {
+            console.log("=== TEST GETSET ===");
+
+            const key = "testkey_getset";
+
+            console.log('Cleaning up key before test...');
+            await redis.del(key);
+
+            console.log('Testing GETSET on a non-existing key (should return null and set value to "first_val")...');
+            let oldVal = await redis.getset(key, "first_val");
+            console.log(`Result:`, oldVal);
+
+            if (oldVal !== null) {
+                throw new Error(`Assertion Failed: GETSET on non-existing key should return null, but got '${oldVal}'`);
+            }
+
+            console.log('Testing GETSET on an existing key (should return "first_val" and update to "second_val")...');
+            oldVal = await redis.getset(key, "second_val");
+            console.log(`Result:`, oldVal);
+
+            if (oldVal !== "first_val") {
+                throw new Error(`Assertion Failed: GETSET should return previous value 'first_val', but got '${oldVal}'`);
+            }
+
+            console.log('Verifying final stored value with GET...');
+            const storedValue = await redis.get(key);
+            console.log(`Stored value check:`, storedValue);
+
+            if (storedValue !== "second_val") {
+                throw new Error(`Assertion Failed: Final stored value should be 'second_val', but got '${storedValue}'`);
+            }
+
+            console.log("✅ TEST GETSET PASSED SUCCESSFULLY!");
+        }
+    };
+}

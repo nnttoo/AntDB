@@ -191,13 +191,12 @@ impl AntDBString {
         Ok(i)
     }
 
-    pub fn append(&self, key : String, val : String)->Result<i64, BoxError> {
-
-        let mut fullval = (||{
+    pub fn append(&self, key: String, val: String) -> Result<i64, BoxError> {
+        let mut fullval = (|| {
             let Ok(val) = self.get(&key) else {
                 return "".to_string();
-            }; 
-            val 
+            };
+            val
         })();
 
         fullval.push_str(&val);
@@ -207,7 +206,21 @@ impl AntDBString {
             return Err(Box::from("error save data"));
         };
 
-
         Ok(len)
+    }
+
+    pub fn getset(&self, key: String, val: String) -> Result<Option<String>, BoxError> {
+        let fullval = (|| {
+            let Ok(val) = self.get(&key) else {
+                return None;
+            };
+            Some(val)
+        })();
+
+        let Ok(_) = self.set(key, val) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(fullval)
     }
 }

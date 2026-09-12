@@ -104,7 +104,7 @@ antdb-server.exe
   - ✅ INCR
   - ✅ DECR
   - ✅ APPEND
-  - ⏳ GETSET
+  - ✅ GETSET
 - Key Utilities
   - ⏳ KEYS
   - ⏳ SCAN
