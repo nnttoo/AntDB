@@ -168,4 +168,46 @@ impl AntDBString {
 
         Ok(i)
     }
+
+    pub fn decr(&self, key: &str) -> Result<i64, BoxError> {
+        let mut i = (|| {
+            let Ok(val) = self.get(&key) else {
+                return 0;
+            };
+
+            let Ok(val) = val.parse::<i64>() else {
+                return 0;
+            };
+
+            val
+        })();
+
+        i = i - 1;
+        let istring = format!("{}", i);
+        let Ok(_) = self.set(key.to_string(), istring) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(i)
+    }
+
+    pub fn append(&self, key : String, val : String)->Result<i64, BoxError> {
+
+        let mut fullval = (||{
+            let Ok(val) = self.get(&key) else {
+                return "".to_string();
+            }; 
+            val 
+        })();
+
+        fullval.push_str(&val);
+        let len = fullval.len() as i64;
+
+        let Ok(_) = self.set(key, fullval) else {
+            return Err(Box::from("error save data"));
+        };
+
+
+        Ok(len)
+    }
 }

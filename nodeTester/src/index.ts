@@ -10,7 +10,7 @@ import { sendRawPing, testExists, testSet, testSetex } from './test_simple';
 import { testHkeys } from './test_hkeys';
 import { testHvals } from './test_hvals';
 import { testHgetall } from './test_hgetall';
-import { testIncr, testMGet, testMSet } from './test_advance';
+import { testAppend, testDecr, testIncr, testMGet, testMSet } from './test_advance';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -57,6 +57,8 @@ async function testSafe() {
         testMSet(redis),
         testMGet(redis),
         testIncr(redis),
+        testDecr(redis),
+        testAppend(redis),
 
     ];
 

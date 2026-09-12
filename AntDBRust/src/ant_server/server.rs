@@ -8,14 +8,17 @@ use tokio_util::bytes::BytesMut;
 
 use super::resp::ServerAntDbResp;
 use crate::{
-    ant_resp::value::{Value, parse_resp}, ant_server::{resp_advance::ServerAntDbRespAdvance, resp_hashmap::ServerAntDbRespHashMap}, app_ctx::AppCtxArc, utils_tools::BoxError,
+    ant_resp::value::{Value, parse_resp},
+    ant_server::{resp_advance::ServerAntDbRespAdvance, resp_hashmap::ServerAntDbRespHashMap},
+    app_ctx::AppCtxArc,
+    utils_tools::BoxError,
 };
 
 pub struct ServerAntDb {
     pub app_ctx: AppCtxArc,
     resp: ServerAntDbResp,
     resp_hashmap: ServerAntDbRespHashMap,
-    resp_advance : ServerAntDbRespAdvance,
+    resp_advance: ServerAntDbRespAdvance,
 }
 
 pub type ServerAntDbArc = Arc<ServerAntDb>;
@@ -26,7 +29,7 @@ impl ServerAntDb {
             app_ctx: app_ctx.clone(),
             resp: ServerAntDbResp::new(app_ctx.clone()),
             resp_hashmap: ServerAntDbRespHashMap::new(app_ctx.clone()),
-            resp_advance : ServerAntDbRespAdvance::new(app_ctx) 
+            resp_advance: ServerAntDbRespAdvance::new(app_ctx),
         }
     }
 
@@ -52,10 +55,9 @@ impl ServerAntDb {
     // Haryanto 11 July 2026
 
     fn create_response(&self, command_name: &str, values: Vec<Value>) -> Value {
-        
         let app_version: &'static str = env!("CARGO_PKG_VERSION");
         let app_version = format!("# AntDB Server version: {} \r\n", app_version).to_string();
-        
+
         match command_name {
             "CLIENT" => Value::String("OK".to_string()),
             "INFO" => Value::Bulk(app_version),
@@ -86,6 +88,8 @@ impl ServerAntDb {
             "MGET" => self.resp_advance.mget(values),
 
             "INCR" => self.resp_advance.incr(values),
+            "DECR" => self.resp_advance.decr(values),
+            "APPEND" => self.resp_advance.append(values),
 
             _ => {
                 println!("command unhandled : {}", command_name);
@@ -166,5 +170,4 @@ impl ServerAntDb {
             }
         }
     }
- 
 }

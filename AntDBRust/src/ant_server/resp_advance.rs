@@ -65,4 +65,40 @@ impl ServerAntDbRespAdvance {
             Err(_) => Value::Null,
         }
     }
+
+    pub fn decr(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'get' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key_bytes) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_string;
+
+        match db.decr(&key_bytes) {
+            Ok(data) => Value::Integer(data),
+            Err(_) => Value::Null,
+        }
+    }
+
+    pub fn append(&self, mut values: Vec<Value>) -> Value {
+        if values.len() < 2 {
+            return Value::Error("ERR wrong number of arguments for 'set' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let val_variant = values.remove(0);
+
+        let (Value::Bulk(key), Value::Bulk(value)) = (key_variant, val_variant) else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_string;
+
+        match db.append(key, value) {
+            Ok(n) => Value::Integer(n),
+            _ => Value::Null,
+        }
+    }
 }

@@ -123,4 +123,92 @@ export function testIncr(redis: Redis): TestMethod {
             console.log("✅ TEST INCR PASSED SUCCESSFULLY!");
         }
     };
+
+    
+}
+
+// Haryanto 12 September 2026
+
+export function testDecr(redis: Redis): TestMethod {
+    return {
+        name: "DECR",
+        success: false,
+        async onTest() {
+            console.log("=== TEST DECR ===");
+
+            const key = "testkey_decr";
+
+            console.log('Cleaning up key before test...');
+            await redis.del(key);
+
+            console.log('Testing DECR on a non-existing key (should initialize to 0 and become -1)...');
+            let result = await redis.decr(key);
+            console.log(`Result:`, result);
+
+            if (result !== -1) {
+                throw new Error(`Assertion Failed: DECR on non-existing key should return -1, but got '${result}'`);
+            }
+
+            console.log('Testing DECR on an existing numeric key (should decrement to -2)...');
+            result = await redis.decr(key);
+            console.log(`Result:`, result);
+
+            if (result !== -2) {
+                throw new Error(`Assertion Failed: DECR should decrement value to -2, but got '${result}'`);
+            }
+
+            console.log('Verifying final stored value with GET...');
+            const storedValue = await redis.get(key);
+            console.log(`Stored value check:`, storedValue);
+
+            if (storedValue !== "-2") {
+                throw new Error(`Assertion Failed: Final stored value should be '-2', but got '${storedValue}'`);
+            }
+
+            console.log("✅ TEST DECR PASSED SUCCESSFULLY!");
+        }
+    };
+}
+
+// Haryanto 12 September 2026
+
+export function testAppend(redis: Redis): TestMethod {
+    return {
+        name: "APPEND",
+        success: false,
+        async onTest() {
+            console.log("=== TEST APPEND ===");
+
+            const key = "testkey_append";
+
+            console.log('Cleaning up key before test...');
+            await redis.del(key);
+
+            console.log('Testing APPEND on a non-existing key (should create key and return string length 5)...');
+            let result = await redis.append(key, "Hello");
+            console.log(`Result:`, result);
+
+            if (result !== 5) {
+                throw new Error(`Assertion Failed: APPEND on non-existing key should return length 5, but got '${result}'`);
+            }
+
+            console.log('Testing APPEND on an existing key (should append and return new total length 11)...');
+            result = await redis.append(key, " World");
+            console.log(`Result:`, result);
+
+            if (result !== 11) {
+                throw new Error(`Assertion Failed: APPEND should return total length 11, but got '${result}'`);
+            }
+
+            console.log('Verifying final stored value with GET...');
+            const storedValue = await redis.get(key);
+            console.log(`Stored value check:`, storedValue);
+
+            if (storedValue !== "Hello World") {
+                throw new Error(`Assertion Failed: Final stored value should be 'Hello World', but got '${storedValue}'`);
+            }
+
+            console.log("✅ TEST APPEND PASSED SUCCESSFULLY!");
+        }
+    };
 }
