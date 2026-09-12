@@ -7,6 +7,8 @@ use super::{
 
 use crate::BoxError;
 
+/// `AntDBHash` provides an interface for handling Redis-compatible 
+/// Hash data operations (such as `HSET`, `HGET`, etc.).
 pub struct AntDBHash {
     db: Arc<AntDB>,
 }

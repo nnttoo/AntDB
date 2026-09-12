@@ -6,6 +6,8 @@ use std::sync::Arc;
 
 use crate::{BoxError, ant_db::db_hashmap_child::ValPairs};
 
+/// `AntDBString` provides an interface for handling Redis-compatible 
+/// String data operations (such as `SET`, `GET`, etc.).
 pub struct AntDBString {
     db: Arc<AntDB>,
 }
@@ -120,30 +122,50 @@ impl AntDBString {
 
         for (key, data) in item_check {
             let strdata: Option<String> = 'block: {
-                let Some(data) = data else { 
+                let Some(data) = data else {
                     break 'block None;
-                
                 };
- 
-                if self.db.expire_delete(&key, &data){
-                    break  'block None;
+
+                if self.db.expire_delete(&key, &data) {
+                    break 'block None;
                 }
 
                 let CacheType::String(value_str) = data.value else {
-                    break  'block None;
+                    break 'block None;
                 };
 
                 let Ok(str) = value_str.get() else {
-
-                    break  'block None;
+                    break 'block None;
                 };
 
                 Some(str)
-            }; 
+            };
 
             r.push(strdata);
         }
 
         Ok(r)
+    }
+
+    pub fn incr(&self, key: String) -> Result<i64, BoxError> {
+        let mut i = (|| {
+            let Ok(val) = self.get(&key) else {
+                return 0;
+            };
+
+            let Ok(val) = val.parse::<i64>() else {
+                return 0;
+            };
+
+            val
+        })();
+
+        i = i + 1;
+
+        let Ok(mut hlock) = self.db.hash_map.write() else {
+            return Err(Box::from("error lock"));
+        };
+
+        Ok(0)
     }
 }
