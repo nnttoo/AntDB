@@ -8,10 +8,7 @@ use tokio_util::bytes::BytesMut;
 
 use super::resp::ServerAntDbResp;
 use crate::{
-    ant_resp::value::{Value, parse_resp},
-    ant_server::{resp_advance::ServerAntDbRespAdvance, resp_hashmap::ServerAntDbRespHashMap},
-    app_ctx::AppCtxArc,
-    utils_tools::BoxError,
+    ant_resp::value::{Value, parse_resp}, ant_server::{resp_advance::ServerAntDbRespAdvance, resp_hashmap::ServerAntDbRespHashMap, resp_utils::ServerAntDbRespUtils}, app_ctx::AppCtxArc, utils_tools::BoxError,
 };
 
 pub struct ServerAntDb {
@@ -19,6 +16,7 @@ pub struct ServerAntDb {
     resp: ServerAntDbResp,
     resp_hashmap: ServerAntDbRespHashMap,
     resp_advance: ServerAntDbRespAdvance,
+    resp_utils : ServerAntDbRespUtils,
 }
 
 pub type ServerAntDbArc = Arc<ServerAntDb>;
@@ -29,7 +27,8 @@ impl ServerAntDb {
             app_ctx: app_ctx.clone(),
             resp: ServerAntDbResp::new(app_ctx.clone()),
             resp_hashmap: ServerAntDbRespHashMap::new(app_ctx.clone()),
-            resp_advance: ServerAntDbRespAdvance::new(app_ctx),
+            resp_advance: ServerAntDbRespAdvance::new(app_ctx.clone()),
+            resp_utils : ServerAntDbRespUtils::new(app_ctx),
         }
     }
 
@@ -91,6 +90,8 @@ impl ServerAntDb {
             "DECR" => self.resp_advance.decr(values),
             "APPEND" => self.resp_advance.append(values),
             "GETSET" =>self.resp_advance.getset(values),
+
+            "KEYS"=>self.resp_utils.keys(values),
 
             _ => {
                 println!("command unhandled : {}", command_name);

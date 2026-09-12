@@ -4,3 +4,4 @@ mod db_hashmap;
 pub mod db_hashmap_child;
 mod db_string;
 mod db_string_child;
+mod db_utils;

@@ -222,5 +222,5 @@ impl AntDBString {
         };
 
         Ok(fullval)
-    }
+    } 
 }

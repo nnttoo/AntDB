@@ -106,7 +106,7 @@ antdb-server.exe
   - ✅ APPEND
   - ✅ GETSET
 - Key Utilities
-  - ⏳ KEYS
+  - ✅ KEYS
   - ⏳ SCAN
 - Quality / Compatibility
   - ⏳ improve Redis command compatibility and tests

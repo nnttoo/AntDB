@@ -51,7 +51,7 @@ impl ServerAntDbRespAdvance {
 
     pub fn incr(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'get' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'incr' command".to_string());
         }
         let key_variant = values.remove(0);
         let Value::Bulk(key_bytes) = key_variant else {
@@ -68,7 +68,7 @@ impl ServerAntDbRespAdvance {
 
     pub fn decr(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'get' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'decr' command".to_string());
         }
         let key_variant = values.remove(0);
         let Value::Bulk(key_bytes) = key_variant else {
@@ -85,7 +85,7 @@ impl ServerAntDbRespAdvance {
 
     pub fn append(&self, mut values: Vec<Value>) -> Value {
         if values.len() < 2 {
-            return Value::Error("ERR wrong number of arguments for 'set' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'append' command".to_string());
         }
         let key_variant = values.remove(0);
         let val_variant = values.remove(0);
@@ -102,9 +102,9 @@ impl ServerAntDbRespAdvance {
         }
     }
 
-     pub fn getset(&self, mut values: Vec<Value>) -> Value {
+    pub fn getset(&self, mut values: Vec<Value>) -> Value {
         if values.len() < 2 {
-            return Value::Error("ERR wrong number of arguments for 'set' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'getset' command".to_string());
         }
         let key_variant = values.remove(0);
         let val_variant = values.remove(0);
@@ -116,11 +116,9 @@ impl ServerAntDbRespAdvance {
         let db = &self.app_ctx.ant_db.db_string;
 
         match db.getset(key, value) {
-            Ok(n) => {
-                match n {
-                    Some(n)=>Value::String(n),
-                    None=>Value::Null
-                }
+            Ok(n) => match n {
+                Some(n) => Value::String(n),
+                None => Value::Null,
             },
             _ => Value::Null,
         }
