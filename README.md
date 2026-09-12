@@ -101,7 +101,7 @@ antdb-server.exe
 - Advanced String Commands
   - ✅ MSET
   - ✅ MGET
-  - ⏳ INCR
+  - ✅ INCR
   - ⏳ DECR
   - ⏳ APPEND
   - ⏳ GETSET

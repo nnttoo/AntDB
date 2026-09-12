@@ -25,30 +25,44 @@ impl ServerAntDbRespAdvance {
     }
 
     pub fn mget(&self, values: Vec<Value>) -> Value {
-        
         let veckey = get_list_fields(&values);
         let veclen = (&veckey).len();
         let db = &self.app_ctx.ant_db.db_string;
 
         match db.multiple_get(veckey) {
-            Ok(v)=>{
-                
-                let mut vecval : Vec<Value> = Vec::with_capacity(veclen);
-                for i in v{
+            Ok(v) => {
+                let mut vecval: Vec<Value> = Vec::with_capacity(veclen);
+                for i in v {
                     match i {
-                        Some(str)=>{
+                        Some(str) => {
                             vecval.push(Value::String(str));
-                        },
-                        None=>{
+                        }
+                        None => {
                             vecval.push(Value::Null);
                         }
                     }
                 }
 
                 Value::Array(vecval)
+            }
+            Err(e) => Value::Error(e.to_string()),
+        }
+    }
 
-            },
-            Err(e)=>Value::Error(e.to_string()),
+    pub fn incr(&self, mut values: Vec<Value>) -> Value {
+        if values.is_empty() {
+            return Value::Error("ERR wrong number of arguments for 'get' command".to_string());
+        }
+        let key_variant = values.remove(0);
+        let Value::Bulk(key_bytes) = key_variant else {
+            return Value::Error("ERR syntax error or invalid argument type".to_string());
+        };
+
+        let db = &self.app_ctx.ant_db.db_string;
+
+        match db.incr(&key_bytes) {
+            Ok(data) => Value::Integer(data),
+            Err(_) => Value::Null,
         }
     }
 }

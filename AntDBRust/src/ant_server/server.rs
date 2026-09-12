@@ -85,6 +85,8 @@ impl ServerAntDb {
             "MSET" => self.resp_advance.mset(values),
             "MGET" => self.resp_advance.mget(values),
 
+            "INCR" => self.resp_advance.incr(values),
+
             _ => {
                 println!("command unhandled : {}", command_name);
                 let err_msg = format!("ERR unknown command '{}'", command_name);
