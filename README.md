@@ -99,14 +99,14 @@ antdb-server.exe
   - ✅ HVALS
   - ✅ HGETALL
 - Advanced String Commands
-  - ⏳ MSET
-  - ⏳ MGET
-  - ⏳ INCR
-  - ⏳ DECR
-  - ⏳ APPEND
-  - ⏳ GETSET
+  - ✅ MSET
+  - ✅ MGET
+  - ✅ INCR
+  - ✅ DECR
+  - ✅ APPEND
+  - ✅ GETSET
 - Key Utilities
-  - ⏳ KEYS
+  - ✅ KEYS
   - ⏳ SCAN
 - Quality / Compatibility
   - ⏳ improve Redis command compatibility and tests

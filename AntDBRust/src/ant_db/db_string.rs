@@ -4,8 +4,10 @@ use super::{
 };
 use std::sync::Arc;
 
-use crate::BoxError;
+use crate::{BoxError, ant_db::db_hashmap_child::ValPairs};
 
+/// `AntDBString` provides an interface for handling Redis-compatible
+/// String data operations (such as `SET`, `GET`, etc.).
 pub struct AntDBString {
     db: Arc<AntDB>,
 }
@@ -74,4 +76,151 @@ impl AntDBString {
 
         Ok(())
     }
+
+    pub fn multiple_set(&self, values: Vec<ValPairs>) -> Result<(), BoxError> {
+        let Ok(mut hmap_lock) = self.db.hash_map.write() else {
+            return Err(Box::from("error lock"));
+        };
+
+        for item in values {
+            let key = item.key;
+            let val = item.value;
+
+            hmap_lock.insert(
+                key,
+                CacheItem {
+                    value: CacheType::String(AntDBStringChild::new(val)),
+                    expires_at: None,
+                },
+            );
+        }
+
+        Ok(())
+    }
+
+    pub fn multiple_get(&self, keys: Vec<String>) -> Result<Vec<Option<String>>, BoxError> {
+        let keyslen = keys.len();
+        let mut r: Vec<Option<String>> = Vec::with_capacity(keyslen);
+
+        let item_check = {
+            let mut ic: Vec<(String, Option<CacheItem>)> = Vec::with_capacity(keyslen);
+            let Ok(hmap_lock) = self.db.hash_map.read() else {
+                return Err(Box::from("error lock"));
+            };
+
+            for item in keys {
+                let Some(data) = hmap_lock.get(&item) else {
+                    ic.push(((&item).clone(), None));
+                    continue;
+                };
+
+                ic.push((item, Some(data.clone())));
+            }
+
+            ic
+        };
+
+        for (key, data) in item_check {
+            let strdata: Option<String> = 'block: {
+                let Some(data) = data else {
+                    break 'block None;
+                };
+
+                if self.db.expire_delete(&key, &data) {
+                    break 'block None;
+                }
+
+                let CacheType::String(value_str) = data.value else {
+                    break 'block None;
+                };
+
+                let Ok(str) = value_str.get() else {
+                    break 'block None;
+                };
+
+                Some(str)
+            };
+
+            r.push(strdata);
+        }
+
+        Ok(r)
+    }
+
+    pub fn incr(&self, key: &str) -> Result<i64, BoxError> {
+        let mut i = (|| {
+            let Ok(val) = self.get(&key) else {
+                return 0;
+            };
+
+            let Ok(val) = val.parse::<i64>() else {
+                return 0;
+            };
+
+            val
+        })();
+
+        i = i + 1;
+        let istring = format!("{}", i);
+        let Ok(_) = self.set(key.to_string(), istring) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(i)
+    }
+
+    pub fn decr(&self, key: &str) -> Result<i64, BoxError> {
+        let mut i = (|| {
+            let Ok(val) = self.get(&key) else {
+                return 0;
+            };
+
+            let Ok(val) = val.parse::<i64>() else {
+                return 0;
+            };
+
+            val
+        })();
+
+        i = i - 1;
+        let istring = format!("{}", i);
+        let Ok(_) = self.set(key.to_string(), istring) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(i)
+    }
+
+    pub fn append(&self, key: String, val: String) -> Result<i64, BoxError> {
+        let mut fullval = (|| {
+            let Ok(val) = self.get(&key) else {
+                return "".to_string();
+            };
+            val
+        })();
+
+        fullval.push_str(&val);
+        let len = fullval.len() as i64;
+
+        let Ok(_) = self.set(key, fullval) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(len)
+    }
+
+    pub fn getset(&self, key: String, val: String) -> Result<Option<String>, BoxError> {
+        let fullval = (|| {
+            let Ok(val) = self.get(&key) else {
+                return None;
+            };
+            Some(val)
+        })();
+
+        let Ok(_) = self.set(key, val) else {
+            return Err(Box::from("error save data"));
+        };
+
+        Ok(fullval)
+    } 
 }

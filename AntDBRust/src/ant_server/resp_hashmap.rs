@@ -1,5 +1,5 @@
 use super::tools::get_list_fields;
-use crate::{ant_db::db_hashmap_child::ValPairs, ant_resp::value::Value, app_ctx::AppCtxArc};
+use crate::{ ant_resp::value::Value, ant_server::tools::get_list_valpair, app_ctx::AppCtxArc};
 
 pub struct ServerAntDbRespHashMap {
     pub app_ctx: AppCtxArc,
@@ -40,22 +40,7 @@ impl ServerAntDbRespHashMap {
             return Value::Error("ERR syntax error or invalid argument type".to_string());
         };
 
-        let valpair = {
-            let mut vpair: Vec<ValPairs> = Vec::new();
-            while values.len() >= 2 {
-                let field_variant = values.remove(0);
-                let val_variant = values.remove(0);
-
-                if let (Value::Bulk(field), Value::Bulk(value)) = (field_variant, val_variant) {
-                    vpair.push(ValPairs{
-                        key : field,
-                        value : value,
-                    });
-                }  
-            }
-
-            vpair
-        };
+        let valpair = get_list_valpair(values);
 
         let vpairlen = valpair.len() as i64;
         let db = &self.app_ctx.ant_db.db_hash; 

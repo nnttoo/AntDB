@@ -10,6 +10,8 @@ import { sendRawPing, testExists, testSet, testSetex } from './test_simple';
 import { testHkeys } from './test_hkeys';
 import { testHvals } from './test_hvals';
 import { testHgetall } from './test_hgetall';
+import { testAppend, testDecr, testGetSet, testIncr, testMGet, testMSet } from './test_advance';
+import { testKeys } from './test_util';
 
 //@ts-ignore
 const redisHost = process.env.REDIS_HOST ?? '127.0.0.1';
@@ -28,6 +30,8 @@ async function testSafe() {
     console.log("=====================================");
     console.log("INFO : " + info);
     console.log("=====================================");
+ 
+
     let tabResult: TestMethod[] = [
         sendRawPing({
             port: redisPort,
@@ -48,6 +52,17 @@ async function testSafe() {
         testHkeys(redis),
         testHvals(redis),
         testHgetall(redis),
+
+
+
+        testMSet(redis),
+        testMGet(redis),
+        testIncr(redis),
+        testDecr(redis),
+        testAppend(redis),
+        testGetSet(redis),
+
+        testKeys(redis),
 
     ];
 
@@ -74,11 +89,11 @@ async function testSafe() {
 
     (() => {
         let tb = tabResult.map((e) => {
-             
+
             return {
-                name : e.name.toUpperCase().padEnd(20," "),
-                success : e.success,
-                error : e.errror?? null,
+                name: e.name.toUpperCase().padEnd(20, " "),
+                success: e.success,
+                error: e.errror ?? null,
             }
         });
         console.table(tb);

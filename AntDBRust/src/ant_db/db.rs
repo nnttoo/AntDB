@@ -34,6 +34,10 @@ impl CacheItem {
 }
 
 pub type HashDB = Arc<RwLock<HashMap<String, CacheItem>>>;
+
+/// `AntDB` serves as the core storage engine where all data is actually stored.
+/// Both Hash and String types share this underlying storage, while specialized modules 
+/// (such as `AntDBHash` and `AntDBString`) act as interfaces to serve their respective operations.
 pub struct AntDB {
     pub hash_map: HashDB,
 }

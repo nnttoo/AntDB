@@ -156,7 +156,7 @@ impl ServerAntDbResp {
 
     pub fn ttl(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'del' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'ttl' command".to_string());
         }
         let key_variant = values.remove(0);
         let Value::Bulk(key) = key_variant else {
@@ -197,7 +197,7 @@ impl ServerAntDbResp {
 
     pub fn persist(&self, mut values: Vec<Value>) -> Value {
         if values.is_empty() {
-            return Value::Error("ERR wrong number of arguments for 'pttl' command".to_string());
+            return Value::Error("ERR wrong number of arguments for 'persist' command".to_string());
         }
 
         let Value::Bulk(key) = values.remove(0) else {
